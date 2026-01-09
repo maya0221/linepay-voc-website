@@ -45,7 +45,7 @@
         .cat-table td { padding: 10px 8px; border-bottom: 1px solid #F1F5F9; font-weight: 600; }
         .text-pos { color: var(--pos); } .text-neg { color: var(--neg); } .text-neu { color: var(--neu); }
         
-        /* 리스트 테이블 */
+        /* 리스트 테이블: 가로 스크롤 제거 */
         .list-container { max-width: 96%; margin: 24px auto; padding: 0 24px; }
         .main-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
         .main-table th { text-align: left; padding: 12px 10px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -204,6 +204,45 @@
     </div>
 
     <script>
+        // --- 0. Data Mappings (For Simulation - 리포트 채움용) ---
+        const CATEGORY_KO_MAP = {
+            'Payment UX': '결제 경험(UX)',
+            'Merchant Network': '가맹점 네트워크',
+            'Promotion': '프로모션/혜택',
+            'Account Setup': '계정 설정/관리',
+            'CS Response': '고객 응대(CS)',
+            'Others': '기타'
+        };
+
+        // 가상의 AI 분석 요약 데이터 (실제 AI 연동 없음, 시뮬레이션용)
+        const CATEGORY_AI_SUMMARY_MAP = {
+            'Payment UX': [
+                'Frequent app freezing during QR code scanning at checkout reported by multiple users.',
+                'Users generally appreciate the speed, but some find the new UI cluttered.'
+            ],
+            'Merchant Network': [
+                'High demand for expansion into more convenience stores (e.g., 7-11) and local markets.',
+                'Limited acceptance in traditional rural markets remains a key pain point.'
+            ],
+            'Promotion': [
+                'Confusion regarding point redemption rules and short expiration dates frequently mentioned.',
+                'Positive feedback received on the recent "Double Points" weekend campaign.'
+            ],
+            'Account Setup': [
+                'Difficulties with identity verification (KYC) process for foreign residents.',
+                'Password reset process described as cumbersome and unclear by older demographic.'
+            ],
+            'CS Response': [
+                'Long waiting times for in-app chat support during peak evening hours.',
+                'Standardized, macro-like responses felt unhelpful for complex issues.'
+            ],
+            'Others': [
+                'General inquiries about future service expansion plans in the region.',
+                'Minor bugs reported regarding notification settings after the last app update.'
+            ]
+        };
+
+
         // --- 1. 기본 Mock Data (100% Taiwan) ---
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
         const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
@@ -384,7 +423,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ 리포트 생성 (진짜 최종: 왼쪽 정렬 강제 + 번호 제거)
+        // ✅ [V10.0 최종] 리포트 생성 (중앙 정렬 + 콘텐츠 채움)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -399,17 +438,17 @@
 
             const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
 
-            // ⭐️ 핵심: 최상위 테이블 align="left" (이메일 왼쪽 정렬) + A4 테이블 align="left"
+            // ⭐️ 중앙 정렬 A4 레이아웃
             let reportHtml = `
-                <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; margin: 0;">
+                <table width="100%" align="center" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; margin: 0 auto;">
                     <tr>
-                        <td align="left">
-                            <table width="800" align="left" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; width: 100%; max-width: 800px; margin: 0; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: left;">
+                        <td align="center">
+                            <table width="800" align="center" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; width: 100%; max-width: 800px; margin: 0 auto; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: left;">
                                 <tr>
                                     <td style="padding: 50px;">
             `;
 
-            // 1. Overall Summary (번호 제거)
+            // 1. Overall Summary
             reportHtml += `
                 <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Overall Summary</h3>
                 <table width="100%" cellpadding="15" cellspacing="0" border="0">
@@ -428,7 +467,7 @@
                 <div style="height: 30px;"></div>
             `;
 
-            // 2. Category & Key Issues (번호 제거)
+            // 2. Category & Key Issues
             reportHtml += `
                 <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Category & Key Issues</h3>
                 <table width="100%" cellpadding="10" cellspacing="0" border="1" style="border-collapse: collapse; border-color: #E5E7EB; font-size: 12px;">
@@ -449,11 +488,22 @@
             });
             reportHtml += `</tbody></table><div style="height: 30px;"></div>`;
 
-            // 3. Real VOC (번호 제거)
+            // 3. Real VOC (콘텐츠 채움)
             reportHtml += `<h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 25px; font-size: 16px;">Category Details & Real VOC (Top 3)</h3>`;
             
             uniqueCats.forEach(cat => {
                 const catData = filteredData.filter(d => d.category === cat);
+                
+                // ✅ [NEW] 한글 카테고리명 매핑
+                const catKo = CATEGORY_KO_MAP[cat] || cat;
+                
+                // ✅ [NEW] AI 요약 시뮬레이션 데이터 가져오기
+                const aiSummaries = CATEGORY_AI_SUMMARY_MAP[cat] || ['No specific highlights detected for this category.', 'Monitoring for further feedback.'];
+                let summaryListHtml = '';
+                aiSummaries.forEach(summary => {
+                    summaryListHtml += `<li>${summary}</li>`;
+                });
+
                 let pickedVOCs = [];
                 ['Positive', 'Neutral', 'Negative'].forEach(sent => {
                     const item = catData.find(d => d.sentiment === sent);
@@ -471,11 +521,10 @@
                         <tr>
                             <td width="35%" valign="top" style="padding-right: 25px; border-right: 1px solid #F3F4F6;">
                                 <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #1E293B;">${cat}</h4>
-                                <div style="font-size: 12px; color: #64748B; margin-bottom: 15px;">(카테고리 한글명)</div>
-                                <strong style="display: block; font-size: 12px; margin-bottom: 8px; color: #334155;">Key Issues</strong>
+                                <div style="font-size: 12px; color: #64748B; margin-bottom: 15px;">(${catKo})</div>
+                                <strong style="display: block; font-size: 12px; margin-bottom: 8px; color: #334155;">Key Issues (AI Highlights)</strong>
                                 <ul style="margin: 0; padding-left: 15px; font-size: 12px; color: #475569; line-height: 1.6;">
-                                    <li>(AI 분석) 주요 이슈 요약 1</li>
-                                    <li>(AI 분석) 주요 이슈 요약 2</li>
+                                    ${summaryListHtml}
                                 </ul>
                                 <div style="margin-top: 15px; display: inline-block; background: #F1F5F9; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #475569;">
                                     Total: ${totalCount} VOCs
