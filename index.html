@@ -3,167 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Pay VOC Insights Dashboard</title>
+    <title>LINE Pay VOC Dashboard</title>
     <style>
-        /* 1. 디자인 도구(CSS) 직접 작성 (외부 다운로드 X) */
-        :root { --primary: #00B900; --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0; --slate-800: #1e293b; --slate-900: #0f172a; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--slate-50); color: var(--slate-800); }
-        
-        /* 레이아웃 유틸리티 */
-        .flex { display: flex; } .flex-col { flex-direction: column; } .items-center { align-items: center; } .justify-between { justify-content: space-between; } .gap-2 { gap: 8px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
-        .p-4 { padding: 16px; } .p-6 { padding: 24px; } .px-6 { padding-left: 24px; padding-right: 24px; } .py-4 { padding-top: 16px; padding-bottom: 16px; } .mt-4 { margin-top: 16px; } .mb-4 { margin-bottom: 16px; }
-        .w-full { width: 100%; } .h-screen { min-height: 100vh; }
-        .rounded-xl { border-radius: 12px; } .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); } .border { border: 1px solid var(--slate-200); } .bg-white { background-color: white; }
-        
-        /* 텍스트 스타일 */
-        .font-black { font-weight: 900; } .font-bold { font-weight: 700; } .text-xs { font-size: 12px; } .text-sm { font-size: 14px; } .text-lg { font-size: 18px; } .uppercase { text-transform: uppercase; }
-        .text-slate-400 { color: #94a3b8; } .text-green { color: var(--primary); } .text-red { color: #ef4444; } .text-white { color: white; }
-        
-        /* 컴포넌트 스타일 */
-        header { height: 64px; background: white; border-bottom: 1px solid var(--slate-200); position: sticky; top: 0; z-index: 10; }
-        .logo-box { width: 36px; height: 36px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; }
-        .btn { background: var(--slate-900); color: white; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
-        .btn:hover { background: #334155; }
-        .card { background: white; border-radius: 16px; border: 1px solid var(--slate-200); overflow: hidden; }
-        
-        /* 차트 바 스타일 */
-        .bar-container { background: var(--slate-100); height: 12px; border-radius: 99px; overflow: hidden; width: 100%; margin-top: 6px; }
-        .bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
-        .bg-green { background: var(--primary); } .bg-gray { background: #94a3b8; } .bg-red { background: #ef4444; }
+        /* ✅ 1. 고급 디자인 시스템 (외부 다운로드 없이 직접 정의) */
+        :root {
+            --primary: #00B900;
+            --primary-dark: #009900;
+            --bg-page: #F3F4F6;
+            --bg-card: #FFFFFF;
+            --text-main: #111827;
+            --text-sub: #6B7280;
+            --border: #E5E7EB;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 16px;
+        }
 
-        /* 테이블 스타일 */
-        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        th { background: #f8fafc; padding: 12px 24px; color: #64748b; font-weight: 800; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid var(--slate-200); }
-        td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; color: var(--slate-800); }
-        tr:hover { background-color: #f8fafc; }
-        .tag { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .tag-gray { background: var(--slate-100); color: #64748b; }
-        
-        /* 그리드 시스템 */
+        /* 기본 설정 */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        /* 레이아웃 */
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 2fr; } }
+        @media (min-width: 1024px) { .grid { grid-template-columns: 350px 1fr; } }
+        .flex { display: flex; align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; } .gap-4 { gap: 16px; }
+        .mt-4 { margin-top: 16px; } .mb-2 { margin-bottom: 8px; } .mb-6 { margin-bottom: 24px; }
+
+        /* 컴포넌트 스타일 */
+        header { 
+            background: var(--bg-card); 
+            height: 70px; 
+            border-bottom: 1px solid var(--border); 
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { 
+            width: 40px; height: 40px; 
+            background: var(--primary); 
+            color: white; 
+            border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0, 185, 0, 0.3);
+        }
+        .logo-text { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
+
+        .btn-download {
+            background: #1F2937; color: white;
+            padding: 10px 20px; border-radius: 10px;
+            font-weight: 600; font-size: 13px;
+            border: none; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .btn-download:hover { background: #000; transform: translateY(-1px); }
+
+        .card { 
+            background: var(--bg-card); 
+            border-radius: var(--radius); 
+            padding: 24px; 
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); }
+
+        /* 필터 섹션 */
+        .filter-select {
+            padding: 10px 16px; border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 14px; font-weight: 600;
+            background: #F9FAFB; cursor: pointer;
+            min-width: 200px;
+        }
+        .status-badge {
+            background: #ECFDF5; color: #047857;
+            padding: 6px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 700;
+            border: 1px solid #A7F3D0;
+        }
+
+        /* 차트 바 */
+        .chart-row { margin-bottom: 16px; }
+        .chart-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+        .progress-bg { background: #E5E7EB; height: 14px; border-radius: 99px; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 99px; transition: width 1s ease-out; }
+        .bar-pos { background: var(--primary); }
+        .bar-neu { background: #9CA3AF; }
+        .bar-neg { background: #EF4444; }
+
+        /* 테이블 */
+        .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+        thead { background: #F9FAFB; }
+        th { padding: 16px 20px; font-size: 11px; text-transform: uppercase; color: var(--text-sub); font-weight: 800; border-bottom: 1px solid var(--border); }
+        td { padding: 16px 20px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #FAFAFA; }
+
+        .tag { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .tag-market { background: #F3F4F6; color: #4B5563; }
+        .tag-pos { background: #DCFCE7; color: #166534; }
+        .tag-neg { background: #FEE2E2; color: #991B1B; }
+        .tag-neu { background: #F3F4F6; color: #4B5563; }
+
+        /* 페이지네이션 */
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
+        .page-btn {
+            background: white; border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-btn:hover:not(:disabled) { background: #F9FAFB; }
+
+        /* 애니메이션 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate { animation: fadeIn 0.5s ease-out forwards; }
     </style>
 </head>
 <body>
 
-    <div class="flex flex-col h-screen">
-        <header class="flex items-center justify-between px-6">
-            <div class="flex items-center gap-4">
-                <div class="logo-box">L</div>
-                <h1 class="font-black text-lg">LINE PAY VOC INTELLIGENCE</h1>
+    <header>
+        <div class="container flex justify-between">
+            <div class="logo-area">
+                <div class="logo-icon">L</div>
+                <div class="logo-text">LINE PAY <span style="color:var(--text-sub); font-weight:400;">VOC</span></div>
             </div>
-            <button class="btn" onclick="alert('엑셀 다운로드는 보안 정책상 비활성화되었습니다.')">📥 Excel Download</button>
-        </header>
+            <button class="btn-download" onclick="downloadCSV()">
+                <span>📥</span> Excel Download
+            </button>
+        </div>
+    </header>
 
-        <div class="p-6" style="max-width: 1400px; margin: 0 auto; width: 100%;">
-            
-            <div class="card p-6 mb-4 flex justify-between items-center flex-wrap gap-4">
-                <div>
-                    <label class="text-xs font-black text-slate-400 uppercase block mb-2">TARGET MARKET</label>
-                    <select id="countryFilter" onchange="updateDashboard()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: 700;">
-                        <option value="All">🌍 Global Market</option>
-                        <option value="TW">🇹🇼 Taiwan</option>
-                        <option value="TH">🇹🇭 Thailand</option>
-                        <option value="JP">🇯🇵 Japan</option>
-                    </select>
-                </div>
-                <div class="tag tag-gray">✅ Live Data: <span id="totalCount">0</span> feedbacks</div>
+    <main class="container animate">
+        
+        <div class="card mb-6 flex justify-between" style="padding: 16px 24px;">
+            <div class="flex gap-4">
+                <label style="font-size: 12px; font-weight: 800; color: #9CA3AF; text-transform: uppercase;">Target Market</label>
+                <select id="marketFilter" class="filter-select" onchange="renderDashboard()">
+                    <option value="All">🌍 Global Market (All)</option>
+                    <option value="TW">🇹🇼 Taiwan</option>
+                    <option value="TH">🇹🇭 Thailand</option>
+                    <option value="JP">🇯🇵 Japan</option>
+                </select>
             </div>
+            <div class="status-badge">✅ Live System: Active</div>
+        </div>
 
-            <div class="grid">
-                <div class="card p-6">
-                    <h3 class="font-black text-xs text-slate-400 uppercase mb-4">📊 Sentiment Overview</h3>
+        <div class="grid">
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="card">
+                    <h3 style="font-size: 14px; font-weight: 800; color: #374151; margin-bottom: 20px; text-transform: uppercase;">📊 Sentiment Analysis</h3>
                     
-                    <div class="mb-4">
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-green">Positive 😀</span>
-                            <span id="posLabel">0%</span>
-                        </div>
-                        <div class="bar-container"><div id="posBar" class="bar-fill bg-green" style="width: 0%"></div></div>
+                    <div class="chart-row">
+                        <div class="chart-label"><span style="color: var(--primary);">Positive 😀</span> <span id="posLabel">0%</span></div>
+                        <div class="progress-bg"><div id="posBar" class="progress-bar bar-pos" style="width: 0%"></div></div>
                     </div>
-
-                    <div class="mb-4">
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-slate-400">Neutral 😐</span>
-                            <span id="neuLabel">0%</span>
-                        </div>
-                        <div class="bar-container"><div id="neuBar" class="bar-fill bg-gray" style="width: 0%"></div></div>
+                    <div class="chart-row">
+                        <div class="chart-label"><span style="color: #6B7280;">Neutral 😐</span> <span id="neuLabel">0%</span></div>
+                        <div class="progress-bg"><div id="neuBar" class="progress-bar bar-neu" style="width: 0%"></div></div>
                     </div>
-
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-red">Negative 😡</span>
-                            <span id="negLabel">0%</span>
-                        </div>
-                        <div class="bar-container"><div id="negBar" class="bar-fill bg-red" style="width: 0%"></div></div>
+                    <div class="chart-row">
+                        <div class="chart-label"><span style="color: #EF4444;">Negative 😡</span> <span id="negLabel">0%</span></div>
+                        <div class="progress-bg"><div id="negBar" class="progress-bar bar-neg" style="width: 0%"></div></div>
                     </div>
                 </div>
 
-                <div class="card p-6 flex flex-col justify-center" style="border-left: 4px solid #8b5cf6; background: #fbfbfc;">
-                    <h3 class="font-black text-xs uppercase mb-4" style="color: #8b5cf6;">🤖 AI Strategic Insight</h3>
-                    <p id="insightEn" class="text-sm font-bold" style="line-height: 1.6; color: #334155;">
+                <div class="card" style="background: linear-gradient(135deg, #F5F3FF 0%, #FFFFFF 100%); border: 1px solid #DDD6FE;">
+                    <h3 style="font-size: 14px; font-weight: 800; color: #7C3AED; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        🤖 AI Strategic Insight
+                    </h3>
+                    <p id="aiInsightEn" style="font-size: 15px; font-weight: 600; line-height: 1.6; color: #1F2937; margin-bottom: 12px;">
                         Analyzing data...
                     </p>
-                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-                        <p id="insightKo" class="text-xs font-bold text-slate-400">데이터 분석 중...</p>
+                    <div style="padding-top: 12px; border-top: 1px solid #DDD6FE;">
+                        <p id="aiInsightKo" style="font-size: 13px; color: #6B7280; font-weight: 500;">데이터 분석 중...</p>
                     </div>
                 </div>
             </div>
 
-            <div class="card mt-4">
-                <div style="overflow-x: auto;">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 800;">📝 Recent Feedbacks</h3>
+                    <span id="totalCount" style="background: #F3F4F6; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">0 items</span>
+                </div>
+
+                <div class="table-container">
                     <table>
                         <thead>
                             <tr>
-                                <th>Source</th>
-                                <th>Date</th>
-                                <th>Country</th>
-                                <th>Sentiment</th>
-                                <th>Category</th>
-                                <th style="width: 40%;">Content</th>
+                                <th style="width: 15%;">Source</th>
+                                <th style="width: 15%;">Market</th>
+                                <th style="width: 15%;">Sentiment</th>
+                                <th>Feedback Content</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             </tbody>
                     </table>
                 </div>
-                <div class="p-4 flex justify-center gap-2" style="background: #f8fafc; border-top: 1px solid #e2e8f0;">
-                    <button class="btn" style="background: white; color: #333; border: 1px solid #e2e8f0;" onclick="changePage(-1)">Prev</button>
-                    <span id="pageInfo" class="flex items-center text-xs font-bold px-4">Page 1</span>
-                    <button class="btn" style="background: white; color: #333; border: 1px solid #e2e8f0;" onclick="changePage(1)">Next</button>
+
+                <div class="pagination">
+                    <button class="page-btn" onclick="changePage(-1)" id="prevBtn">Previous</button>
+                    <span id="pageInfo" style="display: flex; align-items: center; font-size: 13px; font-weight: 700; color: #6B7280;">Page 1</span>
+                    <button class="page-btn" onclick="changePage(1)" id="nextBtn">Next</button>
                 </div>
             </div>
-
         </div>
-    </div>
+    </main>
+
+    <footer style="text-align: center; padding: 40px; color: #9CA3AF; font-size: 12px; font-weight: 700; text-transform: uppercase;">
+        LINE Pay Intelligence Dashboard © 2026
+    </footer>
 
     <script>
-        // 1. 데이터 생성 (Mock Data)
-        const MOCK_DATA = Array.from({ length: 100 }).map((_, i) => ({
-            id: i,
-            source: ['Facebook', 'App Store', 'Threads', 'Play Store'][i % 4],
-            date: `2024-03-${((i % 28) + 1).toString().padStart(2, '0')}`,
-            country: ['TW', 'TH', 'JP', 'Global'][i % 4],
-            sentiment: ['Positive', 'Neutral', 'Negative'][Math.floor(Math.random() * 3)],
-            category: ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup'][i % 4],
-            content: `User feedback regarding LINE Pay service #${i+1}. Transaction speed and UI were mentioned.`,
-            translation: `LINE Pay 서비스 피드백 #${i+1}. 거래 속도와 UI에 대한 언급이 있었습니다.`
-        }));
+        // 1. Mock Data 생성
+        const MOCK_DATA = Array.from({ length: 150 }).map((_, i) => {
+            const markets = ['TW', 'TH', 'JP', 'Global'];
+            const sentiments = ['Positive', 'Neutral', 'Negative'];
+            const sources = ['App Store', 'Play Store', 'Twitter', 'Support'];
+            
+            return {
+                id: i,
+                date: '2024-03-28',
+                market: markets[i % 4],
+                sentiment: sentiments[Math.floor(Math.random() * sentiments.length)],
+                source: sources[i % 4],
+                content: `Feedback item #${i+1} regarding payment flow. User experienced delay in authentication.`,
+                translation: `결제 흐름에 대한 피드백 #${i+1}. 사용자가 인증 과정에서 지연을 경험했습니다.`
+            };
+        });
 
         let currentPage = 1;
-        const itemsPerPage = 8;
+        const itemsPerPage = 7;
         let currentFilter = 'All';
 
-        function updateDashboard() {
+        function renderDashboard() {
             // 필터링
-            currentFilter = document.getElementById('countryFilter').value;
-            const filtered = MOCK_DATA.filter(d => currentFilter === 'All' || d.country === currentFilter);
+            currentFilter = document.getElementById('marketFilter').value;
+            const filtered = MOCK_DATA.filter(d => currentFilter === 'All' || d.market === currentFilter);
             
-            // 1. 카운트 업데이트
-            document.getElementById('totalCount').innerText = filtered.length;
+            // 상단 카운트
+            document.getElementById('totalCount').innerText = `${filtered.length} items`;
 
-            // 2. 차트 업데이트
+            // 차트 업데이트
             const pos = filtered.filter(d => d.sentiment === 'Positive').length;
             const neu = filtered.filter(d => d.sentiment === 'Neutral').length;
             const neg = filtered.filter(d => d.sentiment === 'Negative').length;
@@ -173,61 +265,80 @@
             updateBar('neu', neu, total);
             updateBar('neg', neg, total);
 
-            // 3. AI 인사이트 텍스트
+            // AI 인사이트
             const top = pos >= neg ? (pos >= neu ? 'Positive' : 'Neutral') : (neg >= neu ? 'Negative' : 'Neutral');
-            document.getElementById('insightEn').innerHTML = 
-                `Based on <strong>${filtered.length}</strong> feedbacks in <strong>${currentFilter}</strong>, the main sentiment is <span style="color:${top==='Positive'?'#00B900':top==='Negative'?'#ef4444':'#94a3b8'}">${top}</span>.`;
-            document.getElementById('insightKo').innerText = 
-                `🇰🇷 (요약) ${currentFilter} 지역의 주요 여론은 '${top}' 성향을 보이고 있습니다.`;
+            const marketName = currentFilter === 'All' ? 'Global' : currentFilter;
+            
+            document.getElementById('aiInsightEn').innerHTML = 
+                `Based on <strong style="color:#7C3AED">${filtered.length}</strong> feedbacks in <strong>${marketName}</strong>, the dominant sentiment is <span style="background:${top==='Positive'?'#DCFCE7':'#FEE2E2'}; padding:2px 8px; border-radius:4px; color:${top==='Positive'?'#166534':'#991B1B'}">${top}</span>. Major keywords: Payment, Speed, UX.`;
+            
+            document.getElementById('aiInsightKo').innerText = 
+                `🇰🇷 (요약) ${marketName} 시장의 여론은 대체로 '${top}'입니다. 주요 키워드는 결제 속도와 UX로 분석됩니다.`;
 
-            // 4. 테이블 렌더링
+            // 테이블 리스트
             const start = (currentPage - 1) * itemsPerPage;
             const end = start + itemsPerPage;
             const pageData = filtered.slice(start, end);
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
             pageData.forEach(item => {
-                const sentimentColor = item.sentiment === 'Positive' ? 'text-green' : (item.sentiment === 'Negative' ? 'text-red' : 'text-slate-400');
-                const emoji = item.sentiment === 'Positive' ? '😀' : (item.sentiment === 'Negative' ? '😡' : '😐');
-                
+                const sentimentClass = item.sentiment === 'Positive' ? 'tag-pos' : (item.sentiment === 'Negative' ? 'tag-neg' : 'tag-neu');
                 const row = `
                     <tr>
-                        <td class="font-bold">${item.source}</td>
-                        <td class="text-xs text-slate-400 font-bold">${item.date}</td>
-                        <td><span class="tag tag-gray">${item.country}</span></td>
-                        <td class="${sentimentColor} font-black text-xs">${emoji} ${item.sentiment}</td>
-                        <td><span class="tag tag-gray" style="border:1px solid #e2e8f0; background:white;">${item.category}</span></td>
+                        <td style="font-weight:700; color:#374151;">${item.source}</td>
+                        <td><span class="tag tag-market">${item.market}</span></td>
+                        <td><span class="tag ${sentimentClass}">${item.sentiment}</span></td>
                         <td>
-                            <div class="font-bold text-xs" style="margin-bottom:4px;">"${item.content}"</div>
-                            <div class="text-xs text-slate-400">${item.translation}</div>
+                            <div style="font-weight:600; font-size:13px; margin-bottom:4px;">"${item.content}"</div>
+                            <div style="font-size:12px; color:#9CA3AF;">${item.translation}</div>
                         </td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
             });
 
-            document.getElementById('pageInfo').innerText = `Page ${currentPage}`;
+            // 페이지 버튼
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
         }
 
         function updateBar(id, count, total) {
             const pct = Math.round((count / total) * 100);
             document.getElementById(`${id}Bar`).style.width = `${pct}%`;
-            document.getElementById(`${id}Label`).innerText = `${count} (${pct}%)`;
+            document.getElementById(`${id}Label`).innerText = `${pct}%`;
         }
 
         function changePage(dir) {
-            const filtered = MOCK_DATA.filter(d => currentFilter === 'All' || d.country === currentFilter);
+            const filtered = MOCK_DATA.filter(d => currentFilter === 'All' || d.market === currentFilter);
             const totalPages = Math.ceil(filtered.length / itemsPerPage);
             const newPage = currentPage + dir;
             if (newPage > 0 && newPage <= totalPages) {
                 currentPage = newPage;
-                updateDashboard();
+                renderDashboard();
             }
         }
 
+        function downloadCSV() {
+            const filtered = MOCK_DATA.filter(d => currentFilter === 'All' || d.market === currentFilter);
+            let csvContent = "data:text/csv;charset=utf-8,Source,Market,Sentiment,Content\n";
+            filtered.forEach(row => {
+                csvContent += `${row.source},${row.market},${row.sentiment},${row.content.replace(/,/g, ' ')}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "voc_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // 초기 실행
-        updateDashboard();
+        renderDashboard();
     </script>
 </body>
 </html>
