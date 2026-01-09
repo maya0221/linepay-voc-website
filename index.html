@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE Pay VOC Insights Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .line-green { color: #00B900; }
+        .bg-line-green { background-color: #00B900; }
+        .border-line-green { border-color: #00B900; }
+        .text-line-green { color: #00B900; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        @media print {
+            .no-print { display: none !important; }
+        }
+
+        /* Subtle Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+
+    <!-- Import Map for Browser-based ESM -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "recharts": "https://esm.sh/recharts@2.7.2",
+    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
+    "@google/genai": "https://esm.sh/@google/genai@0.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import React, { useState, useMemo, useEffect, useRef } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { 
+            Download, Copy, ChevronLeft, ChevronRight, ExternalLink, MessageSquare, 
+            BarChart2, PieChart, Globe, Smile, Meh, Frown, Filter, TrendingUp, Search, 
+            LayoutGrid, Mail, Info, CheckCircle
+        } from 'lucide-react';
+        import { 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
+        } from 'recharts';
+        import * as XLSX from 'xlsx';
+        import html2canvas from 'html2canvas';
+        import { GoogleGenAI, Type } from "@google/genai";
+
+        // --- Mock Data Generation ---
+        const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
+        const SOURCES = ['Facebook', 'Threads', 'App Store', 'Play Store'];
+        const COUNTRIES = ['TW', 'TH', 'JP', 'Global'];
+        const SENTIMENTS = ['Positive', 'Neutral', 'Negative'];
+
+        const generateMockData = () => {
+            return Array.from({ length: 150 }).map((_, i) => {
+                const country = COUNTRIES[i % COUNTRIES.length];
+                const source = SOURCES[i % SOURCES.length];
+                const sentiment = SENTIMENTS[Math.floor(Math.random() * SENTIMENTS.length)];
+                const category = CATEGORIES[i % CATEGORIES.length];
+                const day = (i % 28) + 1;
+                const date = `2024-03-${day.toString().padStart(2, '0')}`;
+                
+                return {
+                    id: `voc-${i}`,
+                    source,
+                    date,
+                    country,
+                    sentiment,
+                    category,
+                    originalContent: `[${category}] Experience with LINE Pay in ${country}. The ${category.toLowerCase()} service was ${sentiment === 'Positive' ? 'outstanding' : sentiment === 'Negative' ? 'quite slow' : 'average'}.`,
+                    koreanTranslation: `[${category}] ${country} 지역 LINE Pay 이용 후기입니다. ${category} 서비스가 ${sentiment === 'Positive' ? '매우 훌륭했습니다' : sentiment === 'Negative' ? '다소 느리고 불편했습니다' : '보통이었습니다'}.`,
+                    link: `https://linepay.example.com/voc/${i}`
+                };
+            });
+        };
+
+        const MOCK_DATA = generateMockData();
+
+        // --- Main Component ---
+        const App = () => {
+            const dashboardRef = useRef(null);
+
+            // Filter States
+            const [dateRange, setDateRange] = useState({ start: '2024-03-01', end: '2024-03-31' });
+            const [countryPicker, setCountryPicker] = useState('All');
+            const [sentimentPicker, setSentimentPicker] = useState('All');
+            
+            const [appliedFilters, setAppliedFilters] = useState({
+                start: '2024-03-01',
+                end: '2024-03-31',
+                country: 'All',
+                sentiment: 'All'
+            });
+
+            // Logic States
+            const [currentPage, setCurrentPage] = useState(1);
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+            const [isCopied, setIsCopied] = useState(false);
+            const [isImageCopying, setIsImageCopying] = useState(false);
+            const itemsPerPage = 15;
+
+            const [aiInsight, setAiInsight] = useState({
+                en: "Processing feedback to extract key strategic trends...",
+                ko: "피드백을 분석하여 주요 전략 트렌드를 도출하는 중입니다..."
+            });
+
+            const handleSearch = () => {
+                setAppliedFilters({
+                    start: dateRange.start,
+                    end: dateRange.end,
+                    country: countryPicker,
+                    sentiment: sentimentPicker
+                });
+                setCurrentPage(1); 
+            };
+
+            // Filtered Data Computation
+            const filteredData = useMemo(() => {
+                return MOCK_DATA.filter(item => {
+                    const withinDate = item.date >= appliedFilters.start && item.date <= appliedFilters.end;
+                    const countryMatch = appliedFilters.country === 'All' || item.country === appliedFilters.country;
+                    const sentimentMatch = appliedFilters.sentiment === 'All' || item.sentiment === appliedFilters.sentiment;
+                    return withinDate && countryMatch && sentimentMatch;
+                }).sort((a, b) => b.date.localeCompare(a.date));
+            }, [appliedFilters]);
+
+            // Analytics - Chart Data
+            const sentimentStats = useMemo(() => {
+                const counts = { Positive: 0, Neutral: 0, Negative: 0 };
+                filteredData.forEach(item => counts[item.sentiment]++);
+                return [
+                    { name: 'Positive', count: counts.Positive, color: '#00B900' },
+                    { name: 'Neutral', count: counts.Neutral, color: '#94a3b8' },
+                    { name: 'Negative', count: counts.Negative, color: '#ef4444' },
+                ];
+            }, [filteredData]);
+
+            // Analytics - Source Metrics
+            const sourceTableData = useMemo(() => {
+                const table = {};
+                SOURCES.forEach(s => table[s] = { pos: 0, neu: 0, neg: 0 });
+                filteredData.forEach(item => {
+                    const key = item.sentiment === 'Positive' ? 'pos' : item.sentiment === 'Negative' ? 'neg' : 'neu';
+                    if(table[item.source]) table[item.source][key]++;
+                });
+                return Object.entries(table).map(([name, val]) => ({ 
+                    name, ...val, total: val.pos + val.neu + val.neg 
+                }));
+            }, [filteredData]);
+
+            // Analytics - Category Metrics
+            const categoryTableData = useMemo(() => {
+                const table = {};
+                CATEGORIES.forEach(cat => table[cat] = { pos: 0, neu: 0, neg: 0 });
+                filteredData.forEach(item => {
+                    if (table[item.category]) {
+                        const key = item.sentiment === 'Positive' ? 'pos' : item.sentiment === 'Negative' ? 'neg' : 'neu';
+                        table[item.category][key]++;
+                    }
+                });
+                return Object.entries(table).map(([name, val]) => ({ 
+                    name, ...val, total: val.pos + val.neu + val.neg 
+                })).sort((a, b) => b.total - a.total);
+            }, [filteredData]);
+
+            // AI Logic Simulation
+            useEffect(() => {
+                setIsAnalyzing(true);
+                const timer = setTimeout(() => {
+                    const sorted = [...sentimentStats].sort((a,b) => b.count - a.count);
+                    const top = sorted[0].name;
+                    setAiInsight({
+                        en: `Analysis of ${filteredData.length} records shows a predominantly ${top.toLowerCase()} sentiment. Markets in ${appliedFilters.country} prioritize ${CATEGORIES[0]} and ${CATEGORIES[1]} as critical satisfaction factors.`,
+                        ko: `${filteredData.length}건의 데이터를 분석한 결과, 주로 ${top === 'Positive' ? '긍정적' : top === 'Negative' ? '부정적' : '중점적'}인 반응이 관찰됩니다. ${appliedFilters.country} 지역 사용자들은 특히 ${CATEGORIES[0]}와 ${CATEGORIES[1]} 항목을 중요하게 평가하고 있습니다.`
+                    });
+                    setIsAnalyzing(false);
+                }, 800);
+                return () => clearTimeout(timer);
+            }, [filteredData]);
+
+            // Export Actions
+            const downloadExcel = () => {
+                const wsData = filteredData.map(i => ({
+                    Source: i.source, Date: i.date, Country: i.country, Sentiment: i.sentiment, Category: i.category,
+                    'Original Content': i.originalContent, 'Korean Translation': i.koreanTranslation, Link: i.link
+                }));
+                const ws = XLSX.utils.json_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "VOC_Data");
+                XLSX.writeFile(wb, `LINE_Pay_VOC_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+            };
+
+            const copyToConfluence = () => {
+                let html = `<table border="1" style="border-collapse:collapse;width:100%"><thead><tr style="background:#f2f2f2;font-weight:bold;"><th>Source</th><th>Date</th><th>Country</th><th>Sentiment</th><th>Category</th><th>Content</th><th>Translation</th><th>Link</th></tr></thead><tbody>`;
+                filteredData.slice(0, 50).forEach(i => {
+                    html += `<tr><td>${i.source}</td><td>${i.date}</td><td>${i.country}</td><td>${i.sentiment}</td><td>${i.category}</td><td>${i.originalContent}</td><td>${i.koreanTranslation}</td><td>${i.link}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+                
+                const blob = new Blob([html], { type: 'text/html' });
+                const item = new ClipboardItem({ 'text/html': blob });
+                navigator.clipboard.write([item]).then(() => {
+                    setIsCopied(true);
+                    setTimeout(() => setIsCopied(false), 2000);
+                });
+            };
+
+            const copyReportAsImage = async () => {
+                if (!dashboardRef.current) return;
+                setIsImageCopying(true);
+                try {
+                    const canvas = await html2canvas(dashboardRef.current, {
+                        backgroundColor: '#f8fafc',
+                        scale: 2
+                    });
+                    canvas.toBlob(async (blob) => {
+                        if (blob) {
+                            const item = new ClipboardItem({ 'image/png': blob });
+                            await navigator.clipboard.write([item]);
+                            alert("Dashboard report copied as image! You can now paste it into an email.");
+                        }
+                    });
+                } catch (err) {
+                    console.error("Image export failed", err);
+                } finally {
+                    setIsImageCopying(false);
+                }
+            };
+
+            // Pagination
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* Sticky Navbar */}
+                    <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-50 px-6 flex items-center justify-between shadow-sm no-print">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-[#00B900] rounded-xl flex items-center justify-center shadow-lg shadow-green-100 transition-transform hover:scale-105 cursor-pointer">
+                                <TrendingUp className="text-white w-5 h-5" />
+                            </div>
+                            <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-none uppercase">LINE Pay VOC Intelligence</h1>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={downloadExcel} className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-[11px] font-black hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100">
+                                <Download size={14} /> Excel
+                            </button>
+                            <button onClick={copyToConfluence} className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[11px] font-black hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100">
+                                <Copy size={14} /> {isCopied ? 'Copied! ✅' : 'Confluence Copy'}
+                            </button>
+                            <button onClick={copyReportAsImage} disabled={isImageCopying} className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-lg text-[11px] font-black hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200">
+                                <Mail size={14} /> {isImageCopying ? 'Capturing...' : 'Copy Report for Email'}
+                            </button>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 p-6 max-w-[1700px] mx-auto w-full space-y-6">
+                        {/* Filter Section */}
+                        <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-end gap-6 animate-fade-in no-print">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Filter size={12} /> Date Range</label>
+                                <div className="flex items-center gap-2">
+                                    <input type="date" value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} className="px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-[#00B900]" />
+                                    <span className="text-slate-300 font-bold">~</span>
+                                    <input type="date" value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} className="px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-[#00B900]" />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5 min-w-[150px]">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Globe size={12} /> Target Market</label>
+                                <select value={countryPicker} onChange={e => setCountryPicker(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-[#00B900]">
+                                    <option value="All">All Markets</option>
+                                    <option value="TW">TW (Taiwan)</option>
+                                    <option value="TH">TH (Thailand)</option>
+                                    <option value="JP">JP (Japan)</option>
+                                    <option value="Global">Global</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Smile size={12} /> Sentiment Filter</label>
+                                <div className="flex bg-slate-100 p-1 rounded-xl">
+                                    {['All', 'Positive', 'Neutral', 'Negative'].map(s => (
+                                        <button key={s} onClick={() => setSentimentPicker(s)} className={`px-5 py-1.5 text-[10px] font-black rounded-lg transition-all ${sentimentPicker === s ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}>{s}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button onClick={handleSearch} className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black shadow-xl hover:bg-slate-800 transition-all flex items-center gap-2 ml-auto">
+                                <Search size={16} /> Search & Refresh
+                            </button>
+                        </section>
+
+                        {/* Analytic Layer (3 Column Dashboard) */}
+                        <div ref={dashboardRef} className="p-4 rounded-3xl bg-slate-50 border border-slate-100 shadow-inner">
+                             <div className="mb-4 flex items-center justify-between px-2">
+                                <h2 className="text-md font-black text-slate-800 flex items-center gap-2 uppercase tracking-tight">
+                                    <LayoutGrid size={18} className="text-[#00B900]" /> Analytical Report Overview
+                                </h2>
+                                <div className="text-[9px] font-black text-slate-400 uppercase flex gap-3">
+                                    <span className="bg-white border px-2 py-1 rounded">Period: {appliedFilters.start} - {appliedFilters.end}</span>
+                                    <span className="bg-white border px-2 py-1 rounded">Filter: {appliedFilters.country} · {appliedFilters.sentiment}</span>
+                                </div>
+                             </div>
+
+                            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* AI Strategic Insights */}
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full border-l-4 border-l-purple-500 transition-all hover:shadow-md">
+                                    <div className="px-5 py-4 bg-purple-50/50 border-b border-purple-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <PieChart size={18} className="text-purple-500" />
+                                            <h3 className="font-black text-slate-800 text-[11px] uppercase tracking-wider">AI Strategic Insights</h3>
+                                        </div>
+                                        {isAnalyzing && <div className="animate-spin w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full" />}
+                                    </div>
+                                    <div className="p-6 space-y-5">
+                                        <div>
+                                            <span className="text-[8px] font-black bg-purple-100 text-purple-600 px-2 py-1 rounded uppercase mb-2 inline-block">English Insight</span>
+                                            <p className="text-[13px] text-slate-700 leading-relaxed font-bold italic">"{aiInsight.en}"</p>
+                                        </div>
+                                        <div className="h-px bg-slate-100" />
+                                        <div>
+                                            <span className="text-[8px] font-black bg-purple-100 text-purple-600 px-2 py-1 rounded uppercase mb-2 inline-block">한국어 요약</span>
+                                            <p className="text-[13px] text-slate-700 leading-relaxed font-bold">"{aiInsight.ko}"</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sentiment & Source Metrics */}
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full border-l-4 border-l-[#00B900] transition-all hover:shadow-md">
+                                    <div className="px-5 py-4 bg-green-50/50 border-b border-green-100 flex items-center gap-2">
+                                        <BarChart2 size={18} className="text-[#00B900]" />
+                                        <h3 className="font-black text-slate-800 text-[11px] uppercase tracking-wider">Sentiment & Source Metrics</h3>
+                                    </div>
+                                    <div className="p-5 flex flex-col h-full overflow-hidden">
+                                        <div className="h-36 w-full mb-4">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={sentimentStats} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={9} tick={{ fill: '#94a3b8', fontWeight: 900 }} />
+                                                    <YAxis axisLine={false} tickLine={false} fontSize={9} tick={{ fill: '#94a3b8' }} />
+                                                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                                                        {sentimentStats.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-[9px] text-left">
+                                                <thead className="text-slate-400 font-black uppercase tracking-widest border-b border-slate-100">
+                                                    <tr><th className="pb-2">Source</th><th className="pb-2 text-center text-slate-900">Total</th><th className="pb-2 text-center text-[#00B900]">Pos</th><th className="pb-2 text-center text-slate-400">Neu</th><th className="pb-2 text-center text-red-500">Neg</th></tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {sourceTableData.map(row => (
+                                                        <tr key={row.name} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="py-2 font-bold text-slate-700">{row.name}</td>
+                                                            <td className="py-2 text-center text-slate-900 font-black bg-slate-50/30">{row.total}</td>
+                                                            <td className="py-2 text-center text-[#00B900] font-black">{row.pos}</td>
+                                                            <td className="py-2 text-center text-slate-400 font-black">{row.neu}</td>
+                                                            <td className="py-2 text-center text-red-500 font-black">{row.neg}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Category Sentiment Status */}
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full border-l-4 border-l-blue-500 transition-all hover:shadow-md">
+                                    <div className="px-5 py-4 bg-blue-50/50 border-b border-blue-100 flex items-center gap-2">
+                                        <LayoutGrid size={18} className="text-blue-500" />
+                                        <h3 className="font-black text-slate-800 text-[11px] uppercase tracking-wider">Category Sentiment Status</h3>
+                                    </div>
+                                    <div className="p-5 flex flex-col h-full overflow-hidden">
+                                        <div className="overflow-y-auto max-h-[240px]">
+                                            <table className="w-full text-[9px] text-left">
+                                                <thead className="text-slate-400 font-black uppercase tracking-widest border-b border-slate-100">
+                                                    <tr><th className="pb-2">Category</th><th className="pb-2 text-center text-slate-900">Total</th><th className="pb-2 text-center text-[#00B900]">Pos</th><th className="pb-2 text-center text-slate-400">Neu</th><th className="pb-2 text-center text-red-500">Neg</th></tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {categoryTableData.map(row => (
+                                                        <tr key={row.name} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="py-2.5 font-bold text-slate-700">{row.name}</td>
+                                                            <td className="py-2.5 text-center text-slate-900 font-black bg-slate-50/30 w-16">{row.total}</td>
+                                                            <td className="py-2.5 text-center text-[#00B900] font-black w-14">{row.pos}</td>
+                                                            <td className="py-2.5 text-center text-slate-400 font-black w-14">{row.neu}</td>
+                                                            <td className="py-2.5 text-center text-red-500 font-black w-14">{row.neg}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        {/* VOC Results Section */}
+                        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in no-print" style={{ animationDelay: '0.2s' }}>
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <h2 className="font-black text-slate-800 flex items-center gap-2 uppercase tracking-widest text-[11px]">
+                                    <MessageSquare size={16} className="text-[#00B900]" /> Verified User Feedbacks ({filteredData.length})
+                                </h2>
+                                <div className="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase">
+                                    {appliedFilters.country} · {appliedFilters.sentiment}
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left table-fixed">
+                                    <thead className="bg-slate-50/80 text-slate-500 font-black uppercase text-[9px] tracking-[0.2em] border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-6 py-4 w-[110px]">Source</th>
+                                            <th className="px-6 py-4 w-[100px]">Date</th>
+                                            <th className="px-6 py-4 w-[90px]">Region</th>
+                                            <th className="px-6 py-4 w-[110px]">Sentiment</th>
+                                            <th className="px-6 py-4 w-[130px]">Category</th>
+                                            <th className="px-6 py-4 min-w-[300px]">Original Content</th>
+                                            <th className="px-6 py-4 min-w-[300px]">Korean Translation</th>
+                                            <th className="px-6 py-4 w-[80px] text-center">Link</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {paginatedData.map(item => (
+                                            <tr key={item.id} className="hover:bg-slate-50/50 transition-all group">
+                                                <td className="px-6 py-4 whitespace-nowrap font-black text-slate-800 text-xs">{item.source}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-slate-400 font-bold text-[10px] uppercase tracking-tighter">{item.date}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[9px] font-black uppercase">{item.country}</span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className={`flex items-center gap-1.5 font-black text-[10px] ${item.sentiment === 'Positive' ? 'text-green-600' : item.sentiment === 'Negative' ? 'text-red-600' : 'text-slate-400'}`}>
+                                                        {item.sentiment === 'Positive' ? <Smile size={12} /> : item.sentiment === 'Negative' ? <Frown size={12} /> : <Meh size={12} />} {item.sentiment}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{item.category}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-slate-900 font-bold text-xs leading-snug break-words">"{item.originalContent}"</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-slate-500 text-[10px] font-bold italic break-words leading-relaxed">{item.koreanTranslation}</p>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <a href={item.link} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-[#00B900] hover:text-white transition-all mx-auto">
+                                                        <ExternalLink size={14} />
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredData.length === 0 && (
+                                            <tr><td colSpan={8} className="px-6 py-20 text-center text-slate-300 font-bold italic">No records found matching the criteria.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            <div className="px-6 py-5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-center gap-2 no-print">
+                                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="w-9 h-9 flex items-center justify-center border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-30 transition-all shadow-sm"><ChevronLeft size={16} /></button>
+                                <div className="flex items-center gap-1.5">
+                                    {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                                        const page = i + 1;
+                                        return (
+                                            <button key={page} onClick={() => setCurrentPage(page)} className={`w-9 h-9 rounded-xl text-[11px] font-black transition-all ${currentPage === page ? 'bg-slate-900 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}>{page}</button>
+                                        )
+                                    })}
+                                    {totalPages > 5 && <span className="px-1 text-slate-400 font-bold">...</span>}
+                                </div>
+                                <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)} className="w-9 h-9 flex items-center justify-center border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-30 transition-all shadow-sm"><ChevronRight size={16} /></button>
+                            </div>
+                        </section>
+                    </main>
+
+                    {/* Dashboard Footer */}
+                    <footer className="py-8 text-center text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] no-print">
+                        © 2024 LINE PAY Intelligence VOC Service · Data Insight Engine
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
