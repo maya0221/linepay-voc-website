@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE Pay VOC Insights Dashboard</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
         body {
             font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
@@ -37,28 +38,24 @@
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
     </style>
 
-    <!-- Import Map for Browser-based ESM -->
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.263.1",
-    "xlsx": "https://esm.sh/xlsx@0.18.5",
-    "recharts": "https://esm.sh/recharts@2.7.2",
-    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
-    "@google/genai": "https://esm.sh/@google/genai@0.1.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+        "xlsx": "https://esm.sh/xlsx@0.18.5",
+        "recharts": "https://esm.sh/recharts@2.7.2?external=react,react-dom",
+        "html2canvas": "https://esm.sh/html2canvas@1.4.1",
+        "@google/genai": "https://esm.sh/@google/genai@0.1.0"
+      }
+    }
+    </script>
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="module">
+    <script type="text/babel" data-type="module">
         import React, { useState, useMemo, useEffect, useRef } from 'react';
         import ReactDOM from 'react-dom/client';
         import { 
@@ -71,7 +68,7 @@
         } from 'recharts';
         import * as XLSX from 'xlsx';
         import html2canvas from 'html2canvas';
-        import { GoogleGenAI, Type } from "@google/genai";
+        import { GoogleGenAI } from "@google/genai";
 
         // --- Mock Data Generation ---
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
