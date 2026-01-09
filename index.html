@@ -103,7 +103,7 @@
             <div class="filter-group">
                 <label>TARGET COUNTRY</label>
                 <select id="countryFilter" class="filter-select">
-                    <option value="TW" selected>🇹🇼 Taiwan</option>
+                    <option value="TW" selected>Taiwan</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -211,7 +211,6 @@
         const threeMonthsAgo = new Date(new Date().setMonth(today.getMonth() - 3));
 
         let DATA_STORE = Array.from({ length: 150 }).map((_, i) => {
-            // ✅ Global 등은 다 제거하고 무조건 TW
             const country = 'TW'; 
             const sentiments = ['Positive', 'Neutral', 'Negative'];
             const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
@@ -231,7 +230,6 @@
             };
         });
 
-        // ✅ 기본 조회 기간: 최근 1개월
         const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
         const formatDate = (date) => date.toISOString().split('T')[0];
         
@@ -263,7 +261,6 @@
                         id: index,
                         source: row['Source'] || 'Unknown',
                         date: row['Date'] || new Date().toISOString().split('T')[0],
-                        // ✅ 엑셀에 Country 없으면 무조건 TW로 고정
                         country: row['Country'] || 'TW', 
                         sentiment: row['Sentiment'] || randSent, 
                         category: row['Category'] || randCat,
@@ -288,7 +285,6 @@
 
             filteredData = DATA_STORE.filter(d => {
                 const dateMatch = d.date >= startDate && d.date <= endDate;
-                // 국가 필터는 이제 무조건 TW만 있으므로, 데이터가 TW인지 확인 (혹은 All 처리)
                 const countryMatch = countryVal === 'All' || d.country === countryVal || countryVal === 'TW';
                 const sentimentMatch = sentimentVal === 'All' || d.sentiment === sentimentVal;
                 return dateMatch && countryMatch && sentimentMatch;
@@ -453,7 +449,6 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // 초기 실행
         runSearch();
     </script>
 </body>
