@@ -366,7 +366,6 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ 리포트 생성 (배경색 흰색 + 왼쪽 컬러 테두리 + 이메일 좌측 정렬)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -381,6 +380,7 @@
 
             const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
 
+            // ✅ 1. 최상위 테이블: align="left" (이메일 좌측 정렬 필수)
             let reportHtml = `
                 <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0;">
                     <tr>
@@ -462,9 +462,11 @@
                     pickedVOCs.forEach(v => {
                         const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
                         
-                        // ✅ [핵심 수정] 배경색 흰색, 회색 테두리, 왼쪽만 컬러 테두리 적용
+                        // ✅ [진짜_최종_수정] 배경색 무조건 White, 왼쪽 컬러바 적용 (이미지_9 스타일)
                         const borderLeftColor = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#94A3B8');
-                        const boxStyle = `background-color: #ffffff; border: 1px solid #E5E7EB; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
+                        
+                        // ✨ 핵심 포인트: background-color: #ffffff !important;
+                        const boxStyle = `background-color: #ffffff; border: 1px solid #E2E8F0; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
 
                         reportHtml += `
                             <div style="${boxStyle}">
