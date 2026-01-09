@@ -366,7 +366,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ [V7.1 최종 수정] 리포트 생성 로직 - 배경색 강제 흰색 적용
+        // ✅ [V8.0 최종 순정 버전] 리포트 생성 - 흰 배경 & 얇은 테두리
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -462,12 +462,12 @@
                     pickedVOCs.forEach(v => {
                         const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
                         
-                        // 🛑 [중요] 배경색 로직 완전 삭제 후 Hard Coding
-                        const borderLeftColor = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#94A3B8');
-                        
-                        // ⭐️ 핵심: background-color: #ffffff !important;
+                        // 🛑 굵은 컬러바 제거, 배경은 무조건 흰색, 테두리는 회색 (이미지_9 완벽 구현)
+                        // border-left 삭제함
+                        const boxStyle = `background-color: #ffffff !important; border: 1px solid #E2E8F0; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
+
                         reportHtml += `
-                            <div style="background-color: #ffffff !important; border: 1px solid #E2E8F0; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;">
+                            <div style="${boxStyle}">
                                 <div style="font-size: 11px; color: #64748B; margin-bottom: 6px;">
                                     <b>${v.source}</b> | <span style="color:${color}; font-weight:bold;">${v.sentiment}</span>
                                 </div>
