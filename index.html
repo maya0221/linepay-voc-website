@@ -366,7 +366,6 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ 리포트 생성 로직 업그레이드 (다양한 감정 균형 있게 추출)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -381,6 +380,7 @@
 
             const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
 
+            // ✅ 1. 최상위 테이블에 align="left" 적용하여 이메일 좌측 정렬 보장
             let reportHtml = `
                 <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0;">
                     <tr>
@@ -426,23 +426,16 @@
             
             uniqueCats.forEach(cat => {
                 const catData = filteredData.filter(d => d.category === cat);
-                
-                // 🔥 [핵심 변경] 감정별로 골고루 뽑기 (Pos, Neu, Neg 하나씩 우선 확보)
                 let pickedVOCs = [];
                 ['Positive', 'Neutral', 'Negative'].forEach(sent => {
                     const item = catData.find(d => d.sentiment === sent);
                     if (item) pickedVOCs.push(item);
                 });
-
-                // 3개가 안 채워졌으면 나머지 중에서 채우기 (중복 방지)
                 if (pickedVOCs.length < 3) {
                     const remaining = catData.filter(d => !pickedVOCs.includes(d));
                     pickedVOCs = [...pickedVOCs, ...remaining.slice(0, 3 - pickedVOCs.length)];
                 }
-
-                // 최종 보여줄 때는 다시 감정 순서(Pos > Neu > Neg)로 정렬
                 pickedVOCs.sort((a, b) => sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment]);
-
                 const totalCount = catData.length;
 
                 reportHtml += `
@@ -468,10 +461,12 @@
                 } else {
                     pickedVOCs.forEach(v => {
                         const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
-                        const bgStyle = v.sentiment === 'Positive' ? 'background-color: #F0FDF4; border-color: #DCFCE7;' : (v.sentiment === 'Negative' ? 'background-color: #FEF2F2; border-color: #FEE2E2;' : 'background-color: #F8FAFC; border-color: #E2E8F0;');
+                        
+                        // ✅ [수정] 배경색 제거(White) + 테두리 + 왼쪽 컬러바(Left Border)로 깔끔하게 변경
+                        const borderLeftColor = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#94A3B8');
 
                         reportHtml += `
-                            <div style="border: 1px solid; ${bgStyle} border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                            <div style="background-color: #ffffff; border: 1px solid #E2E8F0; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;">
                                 <div style="font-size: 11px; color: #64748B; margin-bottom: 6px;">
                                     <b>${v.source}</b> | <span style="color:${color}; font-weight:bold;">${v.sentiment}</span>
                                 </div>
