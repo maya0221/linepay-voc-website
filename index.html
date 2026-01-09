@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Pay VOC Insights</title>
+    <title>LINE Pay VOC Insights (Taiwan)</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         /* 스타일은 기존과 동일 */
@@ -103,9 +103,7 @@
             <div class="filter-group">
                 <label>TARGET COUNTRY</label>
                 <select id="countryFilter" class="filter-select">
-                    <option value="All">All Countries</option>
-                    <option value="TW" selected>Taiwan</option>
-                    <option value="Global">Global (Others)</option>
+                    <option value="TW" selected>🇹🇼 Taiwan</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -201,7 +199,7 @@
     </div>
 
     <script>
-        // --- 1. 기본 Mock Data (데이터 대폭 증량 및 기간 최신화) ---
+        // --- 1. 기본 Mock Data (100% Taiwan) ---
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
         const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
         
@@ -210,18 +208,14 @@
         }
 
         const today = new Date();
-        // ✅ [수정] 데이터 생성 기간을 최근 3개월로 집중시킴 (화면에 잘 나오게 하기 위해)
         const threeMonthsAgo = new Date(new Date().setMonth(today.getMonth() - 3));
 
-        // ✅ [수정] 데이터 개수를 150개로 늘려서 페이징이 넉넉하게 나오도록 함
         let DATA_STORE = Array.from({ length: 150 }).map((_, i) => {
-            const countries = ['TW', 'TW', 'TW', 'Global']; 
+            // ✅ Global 등은 다 제거하고 무조건 TW
+            const country = 'TW'; 
             const sentiments = ['Positive', 'Neutral', 'Negative'];
             const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
-            const country = countries[i % 4];
             const category = CATEGORIES[i % 5];
-            
-            // 최근 3개월 내의 날짜만 생성
             const date = randomDate(threeMonthsAgo, today);
             
             return {
@@ -237,7 +231,7 @@
             };
         });
 
-        // ✅ [수정] 기본 조회 기간을 "최근 1개월"로 설정
+        // ✅ 기본 조회 기간: 최근 1개월
         const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
         const formatDate = (date) => date.toISOString().split('T')[0];
         
@@ -269,6 +263,7 @@
                         id: index,
                         source: row['Source'] || 'Unknown',
                         date: row['Date'] || new Date().toISOString().split('T')[0],
+                        // ✅ 엑셀에 Country 없으면 무조건 TW로 고정
                         country: row['Country'] || 'TW', 
                         sentiment: row['Sentiment'] || randSent, 
                         category: row['Category'] || randCat,
@@ -293,7 +288,8 @@
 
             filteredData = DATA_STORE.filter(d => {
                 const dateMatch = d.date >= startDate && d.date <= endDate;
-                const countryMatch = countryVal === 'All' || d.country === countryVal;
+                // 국가 필터는 이제 무조건 TW만 있으므로, 데이터가 TW인지 확인 (혹은 All 처리)
+                const countryMatch = countryVal === 'All' || d.country === countryVal || countryVal === 'TW';
                 const sentimentMatch = sentimentVal === 'All' || d.sentiment === sentimentVal;
                 return dateMatch && countryMatch && sentimentMatch;
             });
