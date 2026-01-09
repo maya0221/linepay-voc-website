@@ -6,7 +6,7 @@
     <title>LINE Pay VOC Insights</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* 스타일은 기존과 동일하게 유지 */
+        /* 스타일은 기존과 동일 */
         :root {
             --primary: #00B900;
             --bg-gray: #F8FAFC;
@@ -201,6 +201,7 @@
     </div>
 
     <script>
+        // --- 1. 기본 Mock Data ---
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
         const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
         
@@ -225,19 +226,26 @@
                 category: category,
                 content: `[Sample] Feedback from ${country}. The service experience was ${sentiment.toLowerCase()}.`,
                 translation: `[샘플] ${country} 피드백입니다. 서비스 경험이 ${sentiment === 'Positive' ? '좋았습니다' : '보통/나빴습니다'}.`,
-                link: '' // 기본값은 빈 문자열
+                link: ''
             };
         });
 
-        document.getElementById('startDate').value = '2024-01-01';
-        document.getElementById('endDate').value = '2025-12-31';
+        // ✅ [핵심 변경] 날짜 기본값을 "오늘" 기준 1개월 전으로 자동 설정
+        const today = new Date();
+        const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
+        
+        // YYYY-MM-DD 형식으로 변환
+        const formatDate = (date) => date.toISOString().split('T')[0];
+        
+        document.getElementById('startDate').value = formatDate(oneMonthAgo);
+        document.getElementById('endDate').value = formatDate(today);
         document.getElementById('countryFilter').value = 'TW';
 
         let currentPage = 1;
         const itemsPerPage = 8;
         let filteredData = [];
 
-        // 엑셀 업로드 처리 함수 수정 (Link 처리 강화)
+        // --- 2. 엑셀 업로드 처리 ---
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -262,7 +270,6 @@
                         category: row['Category'] || randCat,
                         content: row['Content'] || row['Original Content'] || 'No content',
                         translation: row['Translation'] || row['Korean Translation'] || `(번역 대기중...) ${row['Content']?.substring(0, 20)}...`,
-                        // ✅ Link 컬럼 읽어오기 (없으면 빈 문자열)
                         link: row['Link'] || row['URL'] || '' 
                     };
                 });
@@ -273,6 +280,7 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // --- 3. 검색 및 렌더링 ---
         function runSearch() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -376,7 +384,6 @@
             pageData.forEach(item => {
                 const sentColor = item.sentiment === 'Positive' ? '#00B900' : item.sentiment === 'Negative' ? '#EF4444' : '#94A3B8';
                 
-                // ✅ 링크 처리: 값이 있으면 a 태그, 없으면 - 표시
                 const linkHtml = item.link && item.link.startsWith('http') 
                     ? `<a href="${item.link}" target="_blank" style="text-decoration:none;">🔗</a>` 
                     : `<span style="color:#cbd5e1;">-</span>`;
@@ -418,7 +425,6 @@
             filteredData.forEach(row => {
                 const cleanContent = `"${(row.content||'').replace(/"/g, '""')}"`;
                 const cleanTrans = `"${(row.translation||'').replace(/"/g, '""')}"`;
-                // ✅ CSV에도 링크 포함
                 csvContent += `${row.source},${row.date},${row.country},${row.sentiment},${row.category},${cleanContent},${cleanTrans},${row.link}\n`;
             });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -435,9 +441,7 @@
             let tableHtml = `<table border="1"><thead><tr style="background:#f2f2f2;"><th>Source</th><th>Date</th><th>Country</th><th>Sentiment</th><th>Category</th><th>Content</th><th>Translation</th><th>Link</th></tr></thead><tbody>`;
             filteredData.slice(0, 50).forEach(row => {
                 const color = row.sentiment === 'Positive' ? 'green' : row.sentiment === 'Negative' ? 'red' : 'gray';
-                // ✅ Confluence 복사 시에도 링크가 있으면 a 태그로 생성
                 const linkCell = row.link && row.link.startsWith('http') ? `<a href="${row.link}">Link</a>` : '-';
-                
                 tableHtml += `<tr><td>${row.source}</td><td>${row.date}</td><td>${row.country}</td><td style="color:${color};font-weight:bold;">${row.sentiment}</td><td>${row.category}</td><td>${row.content}</td><td>${row.translation}</td><td>${linkCell}</td></tr>`;
             });
             tableHtml += `</tbody></table>`;
@@ -449,6 +453,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
+        // 초기 실행
         runSearch();
     </script>
 </body>
