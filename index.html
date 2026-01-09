@@ -214,32 +214,14 @@
             'Others': '기타'
         };
 
-        // 가상의 AI 분석 요약 데이터 (실제 AI 연동 없음, 시뮬레이션용)
+        // ✅ [NEW] 가상의 AI 분석 요약 데이터 (한국어 1문장)
         const CATEGORY_AI_SUMMARY_MAP = {
-            'Payment UX': [
-                'Frequent app freezing during QR code scanning at checkout reported by multiple users.',
-                'Users generally appreciate the speed, but some find the new UI cluttered.'
-            ],
-            'Merchant Network': [
-                'High demand for expansion into more convenience stores (e.g., 7-11) and local markets.',
-                'Limited acceptance in traditional rural markets remains a key pain point.'
-            ],
-            'Promotion': [
-                'Confusion regarding point redemption rules and short expiration dates frequently mentioned.',
-                'Positive feedback received on the recent "Double Points" weekend campaign.'
-            ],
-            'Account Setup': [
-                'Difficulties with identity verification (KYC) process for foreign residents.',
-                'Password reset process described as cumbersome and unclear by older demographic.'
-            ],
-            'CS Response': [
-                'Long waiting times for in-app chat support during peak evening hours.',
-                'Standardized, macro-like responses felt unhelpful for complex issues.'
-            ],
-            'Others': [
-                'General inquiries about future service expansion plans in the region.',
-                'Minor bugs reported regarding notification settings after the last app update.'
-            ]
+            'Payment UX': 'QR 코드 스캔 시 앱 멈춤 현상 및 속도 저하 문제가 주요 불만으로 제기됨.',
+            'Merchant Network': '주요 편의점 및 재래시장 가맹점 확대에 대한 지속적인 요구가 있음.',
+            'Promotion': '포인트 적립 규정 및 유효기간에 대한 고객 혼선이 다수 발생함.',
+            'Account Setup': '외국인 거주자 신원 확인(KYC) 실패 및 비밀번호 재설정 오류 보고됨.',
+            'CS Response': '저녁 피크 시간대 인앱 채팅 상담 연결 지연에 대한 불만 급증.',
+            'Others': '알림 설정 버그 및 차기 서비스 지역 확장 계획에 대한 문의가 있음.'
         };
 
 
@@ -423,7 +405,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ [V10.0 최종] 리포트 생성 (중앙 정렬 + 콘텐츠 채움)
+        // ✅ [V11.5 최종] 리포트 생성 (중앙 정렬 + 한국어 1문장 핵심 이슈)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -438,27 +420,25 @@
 
             const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
 
-            // ⭐️ 중앙 정렬 A4 레이아웃
             let reportHtml = `
-                <table width="100%" align="center" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; margin: 0 auto;">
+                <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; margin: 0;">
                     <tr>
-                        <td align="center">
-                            <table width="800" align="center" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; width: 100%; max-width: 800px; margin: 0 auto; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: left;">
+                        <td align="left">
+                            <table width="800" align="left" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; width: 100%; max-width: 800px; margin: 0; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: left;">
                                 <tr>
                                     <td style="padding: 50px;">
             `;
 
-            // 1. Overall Summary
             reportHtml += `
-                <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Overall Summary</h3>
+                <h3 style="text-align: left; border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Overall Summary</h3>
                 <table width="100%" cellpadding="15" cellspacing="0" border="0">
                     <tr>
-                        <td width="49%" valign="top" style="background-color: #F3F4F6; border-radius: 8px; border: 1px solid #E5E7EB;">
+                        <td width="49%" valign="top" style="background-color: #F9FAFB; border-radius: 8px; border: 1px solid #E5E7EB;">
                             <strong style="color: #7C3AED; display: block; margin-bottom: 8px; font-size: 12px;">ENGLISH</strong>
                             <div style="font-size: 13px; line-height: 1.5; color: #374151;">${document.getElementById('aiEn').innerText.replace(/"/g, '')}</div>
                         </td>
                         <td width="2%"></td>
-                        <td width="49%" valign="top" style="background-color: #F3F4F6; border-radius: 8px; border: 1px solid #E5E7EB;">
+                        <td width="49%" valign="top" style="background-color: #F9FAFB; border-radius: 8px; border: 1px solid #E5E7EB;">
                             <strong style="color: #7C3AED; display: block; margin-bottom: 8px; font-size: 12px;">KOREAN</strong>
                             <div style="font-size: 13px; line-height: 1.5; color: #374151;">${document.getElementById('aiKo').innerText.replace(/"/g, '')}</div>
                         </td>
@@ -467,9 +447,8 @@
                 <div style="height: 30px;"></div>
             `;
 
-            // 2. Category & Key Issues
             reportHtml += `
-                <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Category & Key Issues</h3>
+                <h3 style="text-align: left; border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Category & Key Issues</h3>
                 <table width="100%" cellpadding="10" cellspacing="0" border="1" style="border-collapse: collapse; border-color: #E5E7EB; font-size: 12px;">
                     <thead style="background-color: #F9FAFB;">
                         <tr>
@@ -488,21 +467,14 @@
             });
             reportHtml += `</tbody></table><div style="height: 30px;"></div>`;
 
-            // 3. Real VOC (콘텐츠 채움)
-            reportHtml += `<h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 25px; font-size: 16px;">Category Details & Real VOC (Top 3)</h3>`;
+            reportHtml += `<h3 style="text-align: left; border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 25px; font-size: 16px;">Category Details & Real VOC (Top 3)</h3>`;
             
             uniqueCats.forEach(cat => {
                 const catData = filteredData.filter(d => d.category === cat);
-                
-                // ✅ [NEW] 한글 카테고리명 매핑
                 const catKo = CATEGORY_KO_MAP[cat] || cat;
                 
-                // ✅ [NEW] AI 요약 시뮬레이션 데이터 가져오기
-                const aiSummaries = CATEGORY_AI_SUMMARY_MAP[cat] || ['No specific highlights detected for this category.', 'Monitoring for further feedback.'];
-                let summaryListHtml = '';
-                aiSummaries.forEach(summary => {
-                    summaryListHtml += `<li>${summary}</li>`;
-                });
+                // ✅ [수정] 1개의 한국어 핵심 이슈만 출력
+                const aiSummary = CATEGORY_AI_SUMMARY_MAP[cat] || '특이 사항 없음.';
 
                 let pickedVOCs = [];
                 ['Positive', 'Neutral', 'Negative'].forEach(sent => {
@@ -524,7 +496,7 @@
                                 <div style="font-size: 12px; color: #64748B; margin-bottom: 15px;">(${catKo})</div>
                                 <strong style="display: block; font-size: 12px; margin-bottom: 8px; color: #334155;">Key Issues (AI Highlights)</strong>
                                 <ul style="margin: 0; padding-left: 15px; font-size: 12px; color: #475569; line-height: 1.6;">
-                                    ${summaryListHtml}
+                                    <li>${aiSummary}</li>
                                 </ul>
                                 <div style="margin-top: 15px; display: inline-block; background: #F1F5F9; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #475569;">
                                     Total: ${totalCount} VOCs
@@ -559,7 +531,7 @@
                                     </td>
                                 </tr>
                             </table>
-                            </td>
+                        </td>
                     </tr>
                 </table>
             `;
