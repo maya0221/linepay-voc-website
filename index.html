@@ -4,121 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE Pay VOC Insights Dashboard</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+    
+    <script lang="javascript" src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #1e293b; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .bar-transition { transition: width 1s ease-out; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
+    <div id="root"></div>
 
-    <header class="h-16 bg-white border-b flex items-center justify-between px-6 shadow-sm sticky top-0 z-50">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-[#00B900] rounded-xl flex items-center justify-center text-white text-lg shadow-lg">📈</div>
-            <h1 class="font-black text-xl text-slate-900 tracking-tight">LINE PAY VOC INTELLIGENCE</h1>
-        </div>
-        <button onclick="downloadCSV()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition">📥 Excel Download</button>
-    </header>
+    <script type="text/babel">
+        // ✅ [핵심] import 구문을 쓰지 않고, 이미 로딩된 도구를 변수에 담습니다. (에러 원천 차단)
+        const { useState, useMemo } = React;
+        const { createRoot } = ReactDOM;
+        const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } = Recharts;
 
-    <main class="p-6 max-w-[1600px] mx-auto w-full space-y-6">
-        
-        <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-wrap gap-6 items-center">
-            <div class="w-full md:w-auto">
-                <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">Target Market</label>
-                <select id="countryFilter" onchange="renderApp()" class="w-full md:w-64 px-4 py-2 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-green-500 outline-none bg-slate-50">
-                    <option value="All">🌍 Global Market</option>
-                    <option value="TW">🇹🇼 Taiwan</option>
-                    <option value="TH">🇹🇭 Thailand</option>
-                    <option value="JP">🇯🇵 Japan</option>
-                </select>
-            </div>
-            <div class="ml-auto bg-green-50 px-4 py-2 rounded-xl text-green-700 text-xs font-bold border border-green-100 flex items-center gap-2">
-                ✅ Total Feedbacks: <span id="totalCount">0</span>
-            </div>
-        </div>
+        // --- 아이콘 컴포넌트 (SVG 직접 구현으로 에러 방지) ---
+        const IconTrending = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>;
+        const IconDownload = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
+        const IconSmile = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>;
+        const IconFrown = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>;
+        const IconMeh = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="15" x2="16" y2="15"></line><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>;
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div class="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-1">
-                <h3 class="font-black text-slate-800 text-sm uppercase mb-4">📊 Sentiment Overview</h3>
-                <div class="space-y-5">
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-green-600">Positive 😀</span>
-                            <span id="posCount">0</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-3">
-                            <div id="posBar" class="bg-[#00B900] h-3 rounded-full bar-transition" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-slate-500">Neutral 😐</span>
-                            <span id="neuCount">0</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-3">
-                            <div id="neuBar" class="bg-slate-400 h-3 rounded-full bar-transition" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-red-500">Negative 😡</span>
-                            <span id="negCount">0</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-3">
-                            <div id="negBar" class="bg-red-500 h-3 rounded-full bar-transition" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white p-8 rounded-2xl border shadow-sm lg:col-span-2 flex flex-col justify-center border-l-4 border-l-purple-500 bg-purple-50/10">
-                <h3 class="font-black text-purple-600 text-sm uppercase mb-3">🤖 AI Strategic Insight</h3>
-                <p id="insightText" class="text-slate-700 leading-relaxed text-sm font-medium">
-                    Analyzing data...
-                </p>
-                <div class="mt-4 pt-4 border-t border-slate-200/50">
-                    <p id="insightKo" class="text-slate-500 text-xs font-bold">
-                        데이터 분석 중...
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-slate-50 text-slate-500 font-black uppercase text-[10px] tracking-wider border-b">
-                        <tr>
-                            <th class="px-6 py-4">Source</th>
-                            <th class="px-6 py-4">Date</th>
-                            <th class="px-6 py-4">Country</th>
-                            <th class="px-6 py-4">Sentiment</th>
-                            <th class="px-6 py-4">Category</th>
-                            <th class="px-6 py-4 w-1/3">Content</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-slate-50">
-                        </tbody>
-                </table>
-            </div>
-            <div class="p-4 border-t bg-slate-50/50 flex justify-center gap-3">
-                <button id="prevBtn" onclick="changePage(-1)" class="px-4 py-2 bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-50 font-bold text-xs shadow-sm">Prev</button>
-                <span id="pageInfo" class="px-4 py-2 text-xs font-black text-slate-600 bg-white border rounded-lg shadow-sm flex items-center">Page 1</span>
-                <button id="nextBtn" onclick="changePage(1)" class="px-4 py-2 bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-50 font-bold text-xs shadow-sm">Next</button>
-            </div>
-        </div>
-        
-        <footer class="py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
-            LINE Pay VOC Intelligence Dashboard © 2026
-        </footer>
-    </main>
-
-    <script>
-        // 1. 데이터 생성 (Mock Data)
+        // --- 데이터 생성 ---
         const MOCK_DATA = Array.from({ length: 150 }).map((_, i) => ({
             id: i,
             source: ['Facebook', 'App Store', 'Threads', 'Play Store'][i % 4],
@@ -130,120 +50,167 @@
             translation: `LINE Pay 서비스 피드백 #${i+1}. UI 반응 속도와 거래 속도 관련 내용입니다.`
         }));
 
-        // 상태 변수
-        let currentPage = 1;
-        const itemsPerPage = 10;
-        let currentFilter = 'All';
-
-        // 2. 화면 그리기 함수 (React가 하던 일을 얘가 대신 함)
-        function renderApp() {
-            const filterVal = document.getElementById('countryFilter').value;
-            currentFilter = filterVal;
+        // --- 메인 앱 컴포넌트 ---
+        const App = () => {
+            const [filter, setFilter] = useState('All');
+            const [page, setPage] = useState(1);
             
             // 필터링
-            const filteredData = MOCK_DATA.filter(d => currentFilter === 'All' || d.country === currentFilter);
+            const filteredData = useMemo(() => {
+                return MOCK_DATA.filter(d => filter === 'All' || d.country === filter);
+            }, [filter]);
             
-            // 통계 계산
-            const posCount = filteredData.filter(d => d.sentiment === 'Positive').length;
-            const neuCount = filteredData.filter(d => d.sentiment === 'Neutral').length;
-            const negCount = filteredData.filter(d => d.sentiment === 'Negative').length;
-            const total = filteredData.length;
+            // 차트 데이터
+            const sentimentStats = [
+                { name: 'Positive', count: filteredData.filter(d => d.sentiment === 'Positive').length, color: '#00B900' },
+                { name: 'Neutral', count: filteredData.filter(d => d.sentiment === 'Neutral').length, color: '#94a3b8' },
+                { name: 'Negative', count: filteredData.filter(d => d.sentiment === 'Negative').length, color: '#ef4444' }
+            ];
 
-            // 상단 카운트 업데이트
-            document.getElementById('totalCount').innerText = total;
+            // 엑셀 다운로드
+            const downloadExcel = () => {
+                const ws = XLSX.utils.json_to_sheet(filteredData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "VOC_Data");
+                XLSX.writeFile(wb, `LINE_Pay_VOC_Report.xlsx`);
+            };
 
-            // 차트 업데이트 (CSS width 조절)
-            updateChart('pos', posCount, total);
-            updateChart('neu', neuCount, total);
-            updateChart('neg', negCount, total);
+            // 페이지네이션
+            const perPage = 10;
+            const totalPages = Math.ceil(filteredData.length / perPage);
+            const paginatedData = filteredData.slice((page - 1) * perPage, page * perPage);
 
-            // AI 인사이트 업데이트
-            const topSentiment = posCount >= negCount && posCount >= neuCount ? 'Positive' : (negCount > posCount ? 'Negative' : 'Neutral');
-            const topColor = topSentiment === 'Positive' ? 'text-green-600' : (topSentiment === 'Negative' ? 'text-red-500' : 'text-slate-400');
-            
-            document.getElementById('insightText').innerHTML = 
-                `Analysis of <strong>${total}</strong> feedbacks in <strong>${currentFilter === 'All' ? 'Global' : currentFilter}</strong> market indicates a predominantly <span class="${topColor} font-black">${topSentiment}</span> sentiment.`;
-            
-            document.getElementById('insightKo').innerText = 
-                `🇰🇷 (요약) ${currentFilter} 시장의 ${total}건 데이터를 분석한 결과, 주된 여론은 '${topSentiment}'입니다.`;
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* 상단 네비게이션 */}
+                    <header className="h-16 bg-white border-b sticky top-0 z-50 px-6 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-[#00B900] rounded-xl flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105">
+                                <IconTrending />
+                            </div>
+                            <h1 className="text-xl font-black text-slate-900 tracking-tight">LINE PAY VOC INTELLIGENCE</h1>
+                        </div>
+                        <button onClick={downloadExcel} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition active:scale-95 shadow-lg">
+                            <IconDownload /> Excel Export
+                        </button>
+                    </header>
 
-            // 테이블 리스트 업데이트 (페이지네이션)
-            const start = (currentPage - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            const pageData = filteredData.slice(start, end);
-            const totalPages = Math.ceil(total / itemsPerPage);
+                    <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full space-y-6">
+                        
+                        {/* 필터바 */}
+                        <div className="bg-white p-5 rounded-2xl border shadow-sm flex flex-wrap gap-6 items-center animate-fade-in">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase">Target Market</label>
+                                <select 
+                                    value={filter} 
+                                    onChange={e => {setFilter(e.target.value); setPage(1);}} 
+                                    className="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-[#00B900] focus:border-[#00B900] block w-full p-2.5 font-bold outline-none cursor-pointer hover:bg-slate-100 transition"
+                                >
+                                    <option value="All">🌍 Global Market</option>
+                                    <option value="TW">🇹🇼 Taiwan</option>
+                                    <option value="TH">🇹🇭 Thailand</option>
+                                    <option value="JP">🇯🇵 Japan</option>
+                                </select>
+                            </div>
+                            <div className="ml-auto flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-100 shadow-sm">
+                                <span className="text-xs font-bold">✅ Verified Feedbacks: {filteredData.length} items</span>
+                            </div>
+                        </div>
 
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = ''; // 기존 내용 지우기
+                        {/* 차트 및 인사이트 */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* 감성 차트 */}
+                            <div className="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-1 hover:shadow-md transition">
+                                <h3 className="font-black text-slate-800 text-sm uppercase mb-6 flex items-center gap-2">📊 Sentiment Overview</h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={sentimentStats}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                            <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={11} fontWeight={700} />
+                                            <YAxis axisLine={false} tickLine={false} fontSize={11} />
+                                            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}} />
+                                            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                                                {sentimentStats.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
 
-            if (pageData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 italic">No data found</td></tr>';
-            } else {
-                pageData.forEach(item => {
-                    const sentimentColor = item.sentiment === 'Positive' ? 'text-green-600' : (item.sentiment === 'Negative' ? 'text-red-500' : 'text-slate-400');
-                    const icon = item.sentiment === 'Positive' ? '😀' : (item.sentiment === 'Negative' ? '😡' : '😐');
-                    
-                    const row = `
-                        <tr class="hover:bg-slate-50/50 transition border-b border-slate-50 last:border-0">
-                            <td class="px-6 py-4 font-bold text-slate-700">${item.source}</td>
-                            <td class="px-6 py-4 text-slate-400 text-xs font-bold">${item.date}</td>
-                            <td class="px-6 py-4"><span class="px-2 py-1 bg-slate-100 rounded text-[10px] font-black">${item.country}</span></td>
-                            <td class="px-6 py-4"><span class="${sentimentColor} text-[10px] font-black flex items-center gap-1">${icon} ${item.sentiment.toUpperCase()}</span></td>
-                            <td class="px-6 py-4"><span class="px-2 py-1 border rounded text-[10px] font-bold text-slate-500">${item.category}</span></td>
-                            <td class="px-6 py-4">
-                                <p class="text-slate-800 font-bold text-xs mb-1">"${item.content}"</p>
-                                <p class="text-slate-400 text-[10px]">${item.translation}</p>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
-            }
+                            {/* AI 인사이트 카드 */}
+                            <div className="bg-white p-8 rounded-2xl border shadow-sm lg:col-span-2 flex flex-col justify-center border-l-4 border-l-purple-500 relative overflow-hidden hover:shadow-md transition">
+                                <h3 className="font-black text-purple-600 text-sm uppercase mb-4 flex items-center gap-2">🤖 AI Strategic Summary</h3>
+                                <p className="text-slate-700 text-lg font-medium leading-relaxed mb-4">
+                                    "Analysis of <strong>{filteredData.length}</strong> feedbacks indicates a predominantly 
+                                    <span style={{color: sentimentStats.sort((a,b)=>b.count-a.count)[0].color, fontWeight:'bold'}}> {sentimentStats.sort((a,b)=>b.count-a.count)[0].name}</span> sentiment in the 
+                                    <strong> {filter === 'All' ? 'Global' : filter}</strong> market. 
+                                    Primary user concerns are focused on <span className="underline decoration-2 decoration-red-200">Payment UX Latency</span> and <span className="underline decoration-2 decoration-red-200">Merchant Onboarding</span>."
+                                </p>
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <p className="text-slate-500 text-xs font-bold leading-relaxed">
+                                        🇰🇷 (요약) {filter} 시장 데이터 분석 결과, 전반적인 여론은 {sentimentStats.sort((a,b)=>b.count-a.count)[0].name === 'Positive' ? '긍정적' : '중립/부정적'}입니다. 주요 개선 포인트는 '결제 UX 지연' 및 '가맹점 등록 프로세스'로 식별됩니다.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
-            // 페이지 버튼 상태 업데이트
-            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages || 1}`;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
-        }
+                        {/* 리스트 테이블 */}
+                        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-50 text-slate-500 font-black uppercase text-[10px] tracking-wider border-b">
+                                        <tr>
+                                            <th className="px-6 py-4">Source</th>
+                                            <th className="px-6 py-4">Date</th>
+                                            <th className="px-6 py-4">Country</th>
+                                            <th className="px-6 py-4">Sentiment</th>
+                                            <th className="px-6 py-4">Category</th>
+                                            <th className="px-6 py-4 w-1/3">Feedback Content</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {paginatedData.map((item) => (
+                                            <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                                                <td className="px-6 py-4 font-bold text-slate-700">{item.source}</td>
+                                                <td className="px-6 py-4 text-slate-400 text-xs font-bold">{item.date}</td>
+                                                <td className="px-6 py-4"><span className="px-2.5 py-1 bg-slate-100 rounded-md text-[10px] font-black">{item.country}</span></td>
+                                                <td className="px-6 py-4">
+                                                    <div className={`flex items-center gap-1.5 text-[10px] font-black ${item.sentiment === 'Positive' ? 'text-green-600' : item.sentiment === 'Negative' ? 'text-red-500' : 'text-slate-400'}`}>
+                                                        {item.sentiment === 'Positive' ? <IconSmile /> : item.sentiment === 'Negative' ? <IconFrown /> : <IconMeh />}
+                                                        {item.sentiment.toUpperCase()}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4"><span className="px-2 py-1 border rounded-md text-[10px] font-bold text-slate-500">{item.category}</span></td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-slate-800 font-bold text-xs mb-1.5 leading-snug">"{item.content}"</p>
+                                                    <p className="text-slate-400 text-[10px] font-medium leading-relaxed">{item.translation}</p>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {/* 페이지네이션 */}
+                            <div className="p-4 border-t bg-slate-50/50 flex justify-center gap-2">
+                                <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-50 transition shadow-sm font-bold text-xs">Prev</button>
+                                <span className="px-4 py-1 text-xs font-black text-slate-600 flex items-center bg-white border rounded-lg shadow-sm">Page {page} of {totalPages}</span>
+                                <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-50 transition shadow-sm font-bold text-xs">Next</button>
+                            </div>
+                        </div>
+                    </main>
 
-        function updateChart(id, count, total) {
-            const percentage = total === 0 ? 0 : Math.round((count / total) * 100);
-            document.getElementById(`${id}Count`).innerText = `${count} (${percentage}%)`;
-            document.getElementById(`${id}Bar`).style.width = `${percentage}%`;
-        }
+                    <footer className="py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                        LINE Pay VOC Intelligence Dashboard © 2026
+                    </footer>
+                </div>
+            );
+        };
 
-        function changePage(direction) {
-            const total = MOCK_DATA.filter(d => currentFilter === 'All' || d.country === currentFilter).length;
-            const totalPages = Math.ceil(total / itemsPerPage);
-            const newPage = currentPage + direction;
-            if (newPage > 0 && newPage <= totalPages) {
-                currentPage = newPage;
-                renderApp();
-            }
-        }
-
-        // CSV 다운로드 기능 (외부 라이브러리 없이 구현)
-        function downloadCSV() {
-            const filteredData = MOCK_DATA.filter(d => currentFilter === 'All' || d.country === currentFilter);
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Source,Date,Country,Sentiment,Category,Content\n"; // 헤더
-
-            filteredData.forEach(row => {
-                const cleanContent = row.content.replace(/,/g, " "); // 쉼표 제거
-                csvContent += `${row.source},${row.date},${row.country},${row.sentiment},${row.category},${cleanContent}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "line_pay_voc_data.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // 초기 실행
-        renderApp();
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
