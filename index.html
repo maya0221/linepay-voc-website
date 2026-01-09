@@ -4,134 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE Pay VOC Insights Dashboard</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "recharts": "https://esm.sh/recharts@2.12.3?external=react,react-dom",
+            "lucide-react": "https://esm.sh/lucide-react@0.358.0",
+            "xlsx": "https://esm.sh/xlsx@0.18.5"
+        }
+    }
+    </script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
         body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
+    <div id="root"></div>
 
-    <header class="h-16 bg-white border-b flex items-center justify-between px-6 shadow-sm sticky top-0 z-50">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-[#00B900] rounded-xl flex items-center justify-center text-white text-lg shadow-lg">📈</div>
-            <h1 class="font-black text-xl text-slate-900 tracking-tight">LINE PAY VOC INTELLIGENCE</h1>
-        </div>
-        <div class="flex gap-2">
-            <button class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition">📥 Excel Download</button>
-        </div>
-    </header>
+    <script type="text/babel" data-type="module">
+        import React, { useState, useMemo } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+        import { Download, Copy, Search, Filter, TrendingUp, MessageSquare, Globe, Smile, Meh, Frown, ChevronLeft, ChevronRight } from 'lucide-react';
+        import * as XLSX from 'xlsx';
 
-    <main class="p-6 max-w-[1600px] mx-auto w-full space-y-6">
-        
-        <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-wrap gap-6 items-center">
-            <div>
-                <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">Target Market</label>
-                <select class="px-4 py-2 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-green-500 outline-none">
-                    <option>🌍 All Markets</option>
-                    <option>🇹🇼 Taiwan</option>
-                    <option>🇹🇭 Thailand</option>
-                    <option>🇯🇵 Japan</option>
-                </select>
-            </div>
-            <div class="ml-auto bg-green-50 px-4 py-2 rounded-xl text-green-700 text-xs font-bold border border-green-100">
-                ✅ Verified Feedbacks: 150 items
-            </div>
-        </div>
+        // --- Mock Data (샘플 데이터) ---
+        const MOCK_DATA = Array.from({ length: 150 }).map((_, i) => ({
+            id: i,
+            source: ['Facebook', 'App Store', 'Threads', 'Play Store'][i % 4],
+            date: `2024-03-${((i % 28) + 1).toString().padStart(2, '0')}`,
+            country: ['TW', 'TH', 'JP', 'Global'][i % 4],
+            sentiment: ['Positive', 'Neutral', 'Negative'][Math.floor(Math.random() * 3)],
+            category: ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup'][i % 4],
+            content: `User feedback regarding LINE Pay service #${i+1}. The UI responsiveness and transaction speed were mentioned.`,
+            translation: `LINE Pay 서비스에 대한 사용자 피드백 #${i+1}입니다. UI 반응 속도와 거래 속도에 대한 언급이 있었습니다.`
+        }));
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        const App = () => {
+            const [filter, setFilter] = useState('All');
+            const [page, setPage] = useState(1);
             
-            <div class="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-1">
-                <h3 class="font-black text-slate-800 text-sm uppercase mb-4">📊 Sentiment Overview</h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-green-600">Positive 😀</span>
-                            <span>45%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-4">
-                            <div class="bg-[#00B900] h-4 rounded-full" style="width: 45%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-slate-500">Neutral 😐</span>
-                            <span>30%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-4">
-                            <div class="bg-slate-400 h-4 rounded-full" style="width: 30%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1">
-                            <span class="text-red-500">Negative 😡</span>
-                            <span>25%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-4">
-                            <div class="bg-red-500 h-4 rounded-full" style="width: 25%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            // 필터링 로직
+            const filteredData = useMemo(() => {
+                return MOCK_DATA.filter(d => filter === 'All' || d.country === filter);
+            }, [filter]);
+            
+            // 차트 데이터 계산
+            const sentimentStats = [
+                { name: 'Positive', count: filteredData.filter(d => d.sentiment === 'Positive').length, color: '#00B900' },
+                { name: 'Neutral', count: filteredData.filter(d => d.sentiment === 'Neutral').length, color: '#94a3b8' },
+                { name: 'Negative', count: filteredData.filter(d => d.sentiment === 'Negative').length, color: '#ef4444' }
+            ];
 
-            <div class="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-2 flex flex-col justify-center border-l-4 border-l-purple-500 bg-purple-50/10">
-                <h3 class="font-black text-purple-600 text-sm uppercase mb-3">🤖 AI Strategic Insight</h3>
-                <p class="text-slate-700 leading-relaxed text-sm font-medium">
-                    "Based on the analysis of <strong>150</strong> feedbacks in <strong>Global</strong> market, the user sentiment is predominantly 
-                    <span class="text-[#00B900] font-bold">Positive</span>. 
-                    Key issues are concentrated in <strong>Payment UX</strong> and <strong>Account Setup</strong>. Immediate optimization of the checkout process is recommended."
-                </p>
-                <div class="mt-4 pt-4 border-t border-slate-100">
-                    <p class="text-slate-500 text-xs font-bold">
-                        🇰🇷 (요약) 글로벌 시장의 주요 이슈는 결제 경험(UX)에 집중되어 있습니다. 긍정적 반응을 유지하기 위해 결제 속도 개선이 필요합니다.
-                    </p>
-                </div>
-            </div>
-        </div>
+            // 엑셀 다운로드 기능
+            const downloadExcel = () => {
+                const ws = XLSX.utils.json_to_sheet(filteredData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "VOC_Data");
+                XLSX.writeFile(wb, `LINE_Pay_VOC_Report.xlsx`);
+            };
 
-        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-slate-50 text-slate-500 font-black uppercase text-[10px] tracking-wider border-b">
-                        <tr>
-                            <th class="px-6 py-4">Source</th>
-                            <th class="px-6 py-4">Date</th>
-                            <th class="px-6 py-4">Country</th>
-                            <th class="px-6 py-4">Sentiment</th>
-                            <th class="px-6 py-4">Content</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        <tr class="hover:bg-slate-50/50">
-                            <td class="px-6 py-4 font-bold text-slate-700">Facebook</td>
-                            <td class="px-6 py-4 text-slate-400 text-xs font-bold">2024-03-25</td>
-                            <td class="px-6 py-4"><span class="px-2 py-1 bg-slate-100 rounded text-[10px] font-black">TW</span></td>
-                            <td class="px-6 py-4"><span class="text-green-600 text-[10px] font-black">😀 Positive</span></td>
-                            <td class="px-6 py-4 text-xs font-bold text-slate-700">Very fast transaction speed!</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/50">
-                            <td class="px-6 py-4 font-bold text-slate-700">App Store</td>
-                            <td class="px-6 py-4 text-slate-400 text-xs font-bold">2024-03-24</td>
-                            <td class="px-6 py-4"><span class="px-2 py-1 bg-slate-100 rounded text-[10px] font-black">JP</span></td>
-                            <td class="px-6 py-4"><span class="text-red-500 text-[10px] font-black">😡 Negative</span></td>
-                            <td class="px-6 py-4 text-xs font-bold text-slate-700">Login failed multiple times.</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/50">
-                            <td class="px-6 py-4 font-bold text-slate-700">Play Store</td>
-                            <td class="px-6 py-4 text-slate-400 text-xs font-bold">2024-03-23</td>
-                            <td class="px-6 py-4"><span class="px-2 py-1 bg-slate-100 rounded text-[10px] font-black">TH</span></td>
-                            <td class="px-6 py-4"><span class="text-slate-400 text-[10px] font-black">😐 Neutral</span></td>
-                            <td class="px-6 py-4 text-xs font-bold text-slate-700">It's okay, but UI is a bit confusing.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <footer class="py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
-            LINE Pay VOC Intelligence Dashboard © 2026
-        </footer>
-    </main>
+            // 페이지네이션
+            const perPage = 10;
+            const totalPages = Math.ceil(filteredData.length / perPage);
+            const paginatedData = filteredData.slice((page - 1) * perPage, page * perPage);
 
-</body>
-</html>
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* Header */}
+                    <header className="h-16 bg-white border-b sticky top-0 z-50 px-6 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-[#00B900] rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <TrendingUp size={20} />
+                            </div>
+                            <h1 className="text-xl font-black text-slate-900 tracking-tight">LINE PAY VOC INTELLIGENCE</h1>
+                        </div>
+                        <button onClick={downloadExcel} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition active:scale-95">
+                            <Download size={14} /> Excel Export
+                        </button>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full space-y-6">
+                        
+                        {/* Filter Bar */}
+                        <div className="bg-white p-5 rounded-2xl border shadow-sm flex flex-wrap
