@@ -15,13 +15,8 @@
         .font-bold { font-weight: 700; } .text-xs { font-size: 12px; }
         .card { background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .btn { padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
-        
-        /* 버튼 색상들 */
-        .btn-upload { background: #059669; color: white; } 
-        .btn-primary { background: #2563EB; color: white; } 
-        .btn-copy { background: #7C3AED; color: white; } 
-        .btn-report { background: #F59E0B; color: white; }
-        .btn-dark { background: #334155; color: white; } .btn-dark:hover { background: #1E293B; }
+        .btn-primary { background: #2563EB; color: white; } .btn-dark { background: #334155; color: white; } .btn-dark:hover { background: #1E293B; }
+        .btn-copy { background: #7C3AED; color: white; } .btn-upload { background: #059669; color: white; } .btn-report { background: #F59E0B; color: white; }
         
         header { background: white; border-bottom: 1px solid var(--border); padding: 0 24px; height: 60px; position: sticky; top: 0; z-index: 100; }
         .logo-box { background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
@@ -29,8 +24,6 @@
         .filter-group label { display: block; font-size: 11px; font-weight: 800; color: var(--text-gray); margin-bottom: 6px; text-transform: uppercase; }
         .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 160px; }
         .search-btn { background: #0F172A; color: white; padding: 8px 30px; border-radius: 6px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; height: 38px; margin-top: 18px; }
-        
-        /* 그리드 & 레이아웃 */
         .grid-dashboard { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1600px; margin: 0 auto; padding: 0 24px; }
         @media (min-width: 1200px) { .grid-dashboard { grid-template-columns: 1fr 1fr 1fr; } }
         .ai-box { border-left: 4px solid #8B5CF6; background: #F5F3FF; }
@@ -44,7 +37,6 @@
         .cat-table th { text-align: left; padding: 8px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid var(--border); }
         .cat-table td { padding: 10px 8px; border-bottom: 1px solid #F1F5F9; font-weight: 600; }
         .text-pos { color: var(--pos); } .text-neg { color: var(--neg); } .text-neu { color: var(--neu); }
-        
         .list-container { max-width: 1600px; margin: 24px auto; padding: 0 24px; }
         .main-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .main-table th { text-align: left; padding: 12px 16px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); }
@@ -63,7 +55,9 @@
         .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 24px; overflow-y: auto; background: #f3f4f6; }
         .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
-        .report-preview { background: white; padding: 40px; margin: 0 auto; max-width: 800px; border: 1px solid #e5e7eb; }
+        
+        /* ✅ 이메일 프리뷰 스타일 (왼쪽 정렬 수정) */
+        .report-preview { background: white; padding: 40px; border: 1px solid #e5e7eb; width: 100%; max-width: 800px; }
     </style>
 </head>
 <body>
@@ -179,6 +173,16 @@
         // --- 1. 기본 Mock Data (100% Taiwan) ---
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
         const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
+        
+        // 카테고리 한글 매핑 (리포트용)
+        const CAT_KO = {
+            'Payment UX': '결제 경험',
+            'Merchant Network': '가맹점 네트워크',
+            'Promotion': '프로모션/이벤트',
+            'Account Setup': '계정/가입',
+            'CS Response': '고객 응대'
+        };
+
         function randomDate(start, end) { return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString().split('T')[0]; }
         const today = new Date();
         const threeMonthsAgo = new Date(new Date().setMonth(today.getMonth() - 3));
@@ -320,7 +324,6 @@
             document.body.removeChild(link);
         }
 
-        // ✅ 복구된 Confluence 복사 기능
         async function copyForConfluence() {
             let tableHtml = `<table border="1"><thead><tr style="background:#f2f2f2;"><th>Source</th><th>Date</th><th>Country</th><th>Sentiment</th><th>Category</th><th>Content</th><th>Translation</th><th>Link</th></tr></thead><tbody>`;
             filteredData.slice(0, 50).forEach(row => {
@@ -337,27 +340,59 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ 리포트 생성 및 모달 열기
+        // ✅ 리포트 생성 및 모달 열기 (로직 전면 수정)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
             
+            // 1. 카테고리 통계
             const cMap = {};
             const uniqueCats = [...new Set(filteredData.map(d => d.category))];
-            uniqueCats.forEach(c => cMap[c] = { pos:0, neu:0, neg:0, total:0 });
+            uniqueCats.forEach(c => cMap[c] = { pos:0, neu:0, neg:0, total:0, vocs: [] });
             filteredData.forEach(d => {
                 const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu';
-                if(cMap[d.category]) { cMap[d.category][k]++; cMap[d.category].total++; }
+                if(cMap[d.category]) { 
+                    cMap[d.category][k]++; 
+                    cMap[d.category].total++;
+                    cMap[d.category].vocs.push(d); // 해당 카테고리 모든 VOC 저장
+                }
             });
 
-            const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
-            const sortedVOC = [...filteredData].sort((a, b) => sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment]).slice(0, 15);
+            // ✅ 2. 1-1-1 선출 로직 (Positive 1, Neutral 1, Negative 1)
+            const getTop3 = (items) => {
+                const pos = items.filter(i => i.sentiment === 'Positive');
+                const neu = items.filter(i => i.sentiment === 'Neutral');
+                const neg = items.filter(i => i.sentiment === 'Negative');
+                let result = [];
 
+                // 각 감정에서 1개씩 우선 선발
+                if(pos.length) result.push(pos[0]);
+                if(neu.length) result.push(neu[0]);
+                if(neg.length) result.push(neg[0]);
+
+                // 3개가 안 채워졌으면 남은 것 중에서 중요도 순(Pos > Neu > Neg)으로 채움
+                if(result.length < 3) {
+                    const usedIds = result.map(r => r.id);
+                    const remaining = items.filter(i => !usedIds.includes(i.id));
+                    // 정렬: Pos -> Neu -> Neg
+                    const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
+                    remaining.sort((a, b) => sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment]);
+                    
+                    for(let r of remaining) {
+                        if(result.length >= 3) break;
+                        result.push(r);
+                    }
+                }
+                return result; // 최대 3개
+            };
+
+            // 3. 이메일 템플릿 생성 (Left Align 적용: margin:0)
             let reportHtml = `
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0; text-align: left;">
+                    
                     <tr>
                         <td style="padding-bottom: 20px;">
-                            <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">1. Overall Summary</h3>
+                            <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">Overall Summary</h3>
                             <table width="100%" cellpadding="15" cellspacing="0" border="0">
                                 <tr>
                                     <td width="50%" valign="top" style="background-color: #F3F4F6; border-radius: 8px; border: 1px solid #E5E7EB;">
@@ -373,9 +408,10 @@
                             </table>
                         </td>
                     </tr>
+
                     <tr>
                         <td style="padding-bottom: 30px;">
-                            <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">2. Category & Key Issues</h3>
+                            <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">Category & Key Issues</h3>
                             <table width="100%" cellpadding="8" cellspacing="0" border="1" style="border-collapse: collapse; border-color: #E5E7EB; font-size: 12px;">
                                 <thead style="background-color: #F9FAFB;">
                                     <tr>
@@ -388,17 +424,81 @@
                                 </thead>
                                 <tbody>
             `;
+            
             uniqueCats.forEach(c => {
                 const r = cMap[c];
-                reportHtml += `<tr><td style="padding: 10px;"><b>${c}</b></td><td align="center" style="padding: 10px;">${r.total}</td><td align="center" style="padding: 10px; color: #00B900;">${r.pos}</td><td align="center" style="padding: 10px; color: #6B7280;">${r.neu}</td><td align="center" style="padding: 10px; color: #EF4444;">${r.neg}</td></tr>`;
+                reportHtml += `
+                    <tr>
+                        <td style="padding: 10px;"><b>${c}</b></td>
+                        <td align="center" style="padding: 10px;">${r.total}</td>
+                        <td align="center" style="padding: 10px; color: #00B900;">${r.pos}</td>
+                        <td align="center" style="padding: 10px; color: #6B7280;">${r.neu}</td>
+                        <td align="center" style="padding: 10px; color: #EF4444;">${r.neg}</td>
+                    </tr>
+                `;
             });
-            reportHtml += `</tbody></table></td></tr><tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="40%" valign="top" style="padding-right: 20px;"><h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">3. Key Highlights</h3><div style="background-color: #fff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 15px;"><div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">Payment UX</div><div style="font-size: 12px; color: #666; margin-bottom: 15px;">주요 이슈: 결제 속도 및 인증 실패</div><div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">CS Response</div><div style="font-size: 12px; color: #666; margin-bottom: 15px;">주요 이슈: 응답 지연에 대한 불만 증가</div><div style="font-size: 11px; color: #999; margin-top: 20px;">* This section is generated based on top occurring categories.</div></div></td><td width="60%" valign="top"><h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">4. Real VOC (Top 15)</h3><table width="100%" cellpadding="0" cellspacing="0" border="0">`;
-            sortedVOC.forEach(v => {
-                const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
-                const linkIcon = v.link ? `<a href="${v.link}" style="text-decoration:none; color:#999;">🔗</a>` : '';
-                reportHtml += `<tr><td style="padding-bottom: 15px; border-bottom: 1px solid #F3F4F6; margin-bottom: 15px;"><div style="font-size: 11px; color: #999; margin-bottom: 4px;"><b>${v.source}</b> | <span style="color:${color}; font-weight:bold;">${v.sentiment}</span> ${linkIcon}</div><div style="font-size: 12px; color: #333; margin-bottom: 4px; font-weight:bold;">"${v.content}"</div><div style="font-size: 11px; color: #666;">${v.translation}</div></td></tr>`;
+
+            reportHtml += `
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">Real VOC (Top 3 per Category)</h3>
+            `;
+
+            // 카테고리별 반복 출력
+            uniqueCats.forEach(cat => {
+                const top3 = getTop3(cMap[cat].vocs);
+                const koCat = CAT_KO[cat] || cat; // 한글명 매핑
+                
+                // 임시 주요 이슈 (AI 연동 전이라 하드코딩된 예시 텍스트 사용)
+                const issueEn = `Major feedback regarding ${cat} process.`;
+                const issueKo = `${koCat} 프로세스 관련 주요 피드백입니다.`;
+
+                reportHtml += `
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                        <tr>
+                            <td width="35%" valign="top" style="padding-right: 20px;">
+                                <div style="font-size: 16px; font-weight: bold; color: #111;">${cat}</div>
+                                <div style="font-size: 13px; color: #999; margin-bottom: 10px;">${koCat}</div>
+                                
+                                <div style="font-size: 12px; font-weight: bold; color: #555; margin-top: 10px;">Key Issues</div>
+                                <div style="font-size: 11px; color: #666; margin-bottom: 4px;">• ${issueEn}</div>
+                                <div style="font-size: 11px; color: #666;">• ${issueKo}</div>
+
+                                <div style="margin-top: 15px;">
+                                    <span style="background: #F3F4F6; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #555;">Total: ${cMap[cat].total} VOCs</span>
+                                </div>
+                            </td>
+
+                            <td width="65%" valign="top">
+                `;
+
+                top3.forEach(v => {
+                    const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
+                    reportHtml += `
+                        <div style="border: 1px solid #f0f0f0; background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">
+                                <b>${v.source}</b> | <span style="color:${color}; font-weight:bold;">${v.sentiment}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #333; margin-bottom: 4px; line-height: 1.4;">"${v.content}"</div>
+                            <div style="font-size: 11px; color: #666;">${v.translation}</div>
+                        </div>
+                    `;
+                });
+
+                reportHtml += `
+                            </td>
+                        </tr>
+                    </table>
+                `;
             });
-            reportHtml += `</table></td></tr></table></td></tr></table>`;
+
+            reportHtml += `</td></tr></table>`;
+
             template.innerHTML = reportHtml;
             modal.style.display = 'flex';
         }
