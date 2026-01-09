@@ -366,6 +366,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
+        // ✅ 리포트 생성 (배경색 흰색 + 왼쪽 테두리 색상)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -380,7 +381,6 @@
 
             const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
 
-            // ✅ 1. 최상위 테이블에 align="left" 적용하여 이메일 좌측 정렬 보장
             let reportHtml = `
                 <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0;">
                     <tr>
@@ -462,11 +462,12 @@
                     pickedVOCs.forEach(v => {
                         const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
                         
-                        // ✅ [수정] 배경색 제거(White) + 테두리 + 왼쪽 컬러바(Left Border)로 깔끔하게 변경
+                        // ✅ [핵심 수정] 배경색은 White(#ffffff), 왼쪽 테두리에만 색상 적용
                         const borderLeftColor = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#94A3B8');
+                        const boxStyle = `background-color: #ffffff; border: 1px solid #E2E8F0; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
 
                         reportHtml += `
-                            <div style="background-color: #ffffff; border: 1px solid #E2E8F0; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;">
+                            <div style="${boxStyle}">
                                 <div style="font-size: 11px; color: #64748B; margin-bottom: 6px;">
                                     <b>${v.source}</b> | <span style="color:${color}; font-weight:bold;">${v.sentiment}</span>
                                 </div>
