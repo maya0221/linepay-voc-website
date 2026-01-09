@@ -5,223 +5,143 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE Pay VOC Insights Dashboard</title>
     
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
     
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #1e293b; }
-        .line-green { color: #00B900; }
-        /* Scrollbar & Animation */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        body { font-family: sans-serif; background-color: #f8fafc; }
+        /* 스크롤바 숨김 등 잡다한 스타일 제거하고 핵심만 남김 */
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // [3] 이미 불러온 라이브러리들을 변수에 담기 (import 대신 const 사용)
-        const { useState, useMemo, useEffect, useRef } = React;
+        // ✅ [핵심] import 구문을 전부 없애고, 이미 로딩된 전역 변수에서 꺼내 씁니다.
+        const { useState, useMemo } = React;
         const { createRoot } = ReactDOM;
-        // 차트 라이브러리 꺼내기
+        // 차트 도구 꺼내기
         const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } = Recharts;
 
-        // 아이콘 라이브러리는 CDN에서 바로 가져오기 (ES Module 사용)
-        import { 
-            Download, Copy, ChevronLeft, ChevronRight, ExternalLink, MessageSquare, 
-            BarChart2, PieChart, Globe, Smile, Meh, Frown, Filter, TrendingUp, Search, 
-            LayoutGrid, Mail 
-        } from 'https://esm.sh/lucide-react@0.263.1?external=react';
-        
-        // 엑셀 라이브러리
-        import * as XLSX from 'https://esm.sh/xlsx@0.18.5';
-        // 이미지 캡쳐
-        import html2canvas from 'https://esm.sh/html2canvas@1.4.1';
-
         // --- 데이터 생성 (Mock Data) ---
-        const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
-        const SOURCES = ['Facebook', 'Threads', 'App Store', 'Play Store'];
-        const COUNTRIES = ['TW', 'TH', 'JP', 'Global'];
-        const SENTIMENTS = ['Positive', 'Neutral', 'Negative'];
+        const MOCK_DATA = Array.from({ length: 50 }).map((_, i) => ({
+            id: i,
+            source: ['Facebook', 'App Store', 'Threads'][i % 3],
+            date: `2024-03-${((i % 28) + 1).toString().padStart(2, '0')}`,
+            country: ['TW', 'TH', 'JP'][i % 3],
+            sentiment: ['Positive', 'Neutral', 'Negative'][Math.floor(Math.random() * 3)],
+            content: `Customer feedback content #${i+1}...`
+        }));
 
-        const generateMockData = () => {
-            return Array.from({ length: 150 }).map((_, i) => {
-                const sentiment = SENTIMENTS[Math.floor(Math.random() * SENTIMENTS.length)];
-                const category = CATEGORIES[i % CATEGORIES.length];
-                return {
-                    id: `voc-${i}`,
-                    source: SOURCES[i % SOURCES.length],
-                    date: `2024-03-${((i % 28) + 1).toString().padStart(2, '0')}`,
-                    country: COUNTRIES[i % COUNTRIES.length],
-                    sentiment,
-                    category,
-                    originalContent: `[${category}] Experience with LINE Pay. Service was ${sentiment}.`,
-                    koreanTranslation: `[${category}] LINE Pay 사용 경험. 서비스가 ${sentiment === 'Positive' ? '좋음' : '나쁨'}.`,
-                    link: '#'
-                };
-            });
-        };
-
-        const MOCK_DATA = generateMockData();
-
-        // --- 메인 앱 컴포넌트 ---
+        // --- 메인 앱 ---
         const App = () => {
-            const dashboardRef = useRef(null);
-            const [dateRange, setDateRange] = useState({ start: '2024-03-01', end: '2024-03-31' });
-            const [countryPicker, setCountryPicker] = useState('All');
-            const [sentimentPicker, setSentimentPicker] = useState('All');
-            const [appliedFilters, setAppliedFilters] = useState({ start: '2024-03-01', end: '2024-03-31', country: 'All', sentiment: 'All' });
-            const [currentPage, setCurrentPage] = useState(1);
-            const [isCopied, setIsCopied] = useState(false);
-            const itemsPerPage = 15;
+            const [filter, setFilter] = useState('All');
+            
+            // 데이터 필터링
+            const filteredData = MOCK_DATA.filter(d => filter === 'All' || d.country === filter);
 
-            const handleSearch = () => {
-                setAppliedFilters({ start: dateRange.start, end: dateRange.end, country: countryPicker, sentiment: sentimentPicker });
-                setCurrentPage(1);
-            };
-
-            const filteredData = useMemo(() => {
-                return MOCK_DATA.filter(item => {
-                    const withinDate = item.date >= appliedFilters.start && item.date <= appliedFilters.end;
-                    const countryMatch = appliedFilters.country === 'All' || item.country === appliedFilters.country;
-                    const sentimentMatch = appliedFilters.sentiment === 'All' || item.sentiment === appliedFilters.sentiment;
-                    return withinDate && countryMatch && sentimentMatch;
-                }).sort((a, b) => b.date.localeCompare(a.date));
-            }, [appliedFilters]);
-
-            const sentimentStats = useMemo(() => {
-                const counts = { Positive: 0, Neutral: 0, Negative: 0 };
-                filteredData.forEach(item => counts[item.sentiment]++);
-                return [
-                    { name: 'Positive', count: counts.Positive, color: '#00B900' },
-                    { name: 'Neutral', count: counts.Neutral, color: '#94a3b8' },
-                    { name: 'Negative', count: counts.Negative, color: '#ef4444' },
-                ];
-            }, [filteredData]);
-
-            // 엑셀 다운로드
-            const downloadExcel = () => {
-                const ws = XLSX.utils.json_to_sheet(filteredData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "VOC_Data");
-                XLSX.writeFile(wb, `LINE_Pay_VOC.xlsx`);
-            };
-
-            // 복사 기능
-            const copyToConfluence = () => {
-                let html = `<table border="1"><thead><tr><th>Source</th><th>Date</th><th>Content</th></tr></thead><tbody>`;
-                filteredData.slice(0, 50).forEach(i => html += `<tr><td>${i.source}</td><td>${i.date}</td><td>${i.originalContent}</td></tr>`);
-                html += `</tbody></table>`;
-                const blob = new Blob([html], { type: 'text/html' });
-                const item = new ClipboardItem({ 'text/html': blob });
-                navigator.clipboard.write([item]).then(() => {
-                    setIsCopied(true);
-                    setTimeout(() => setIsCopied(false), 2000);
-                });
-            };
-
-            // 페이지네이션
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+            // 차트 데이터 계산
+            const chartData = [
+                { name: 'Positive', count: filteredData.filter(d => d.sentiment === 'Positive').length, color: '#00B900' },
+                { name: 'Neutral', count: filteredData.filter(d => d.sentiment === 'Neutral').length, color: '#94a3b8' },
+                { name: 'Negative', count: filteredData.filter(d => d.sentiment === 'Negative').length, color: '#ef4444' }
+            ];
 
             return (
                 <div className="min-h-screen flex flex-col">
-                    {/* 상단 네비게이션 */}
-                    <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-50 px-6 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-[#00B900] rounded-xl flex items-center justify-center shadow-lg"><TrendingUp className="text-white w-5 h-5" /></div>
-                            <h1 className="text-xl font-black text-slate-900 uppercase">LINE Pay VOC Intelligence</h1>
+                    {/* 상단 헤더 */}
+                    <header className="h-16 bg-white border-b flex items-center justify-between px-6 shadow-sm sticky top-0 z-50">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white font-bold">L</div>
+                            <h1 className="font-black text-lg text-slate-800">LINE PAY VOC</h1>
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={downloadExcel} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex gap-1"><Download size={14}/> Excel</button>
-                            <button onClick={copyToConfluence} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold flex gap-1"><Copy size={14}/> {isCopied ? 'Copied!' : 'Copy'}</button>
+                        <div className="text-xs font-bold text-slate-500">
+                            Status: Live 🟢
                         </div>
                     </header>
 
-                    <main className="flex-1 p-6 max-w-[1700px] mx-auto w-full space-y-6">
+                    <main className="p-6 max-w-6xl mx-auto w-full space-y-6">
                         {/* 필터 영역 */}
-                        <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-end gap-6">
-                            <div>
-                                <label className="text-[10px] font-black text-slate-400 uppercase block mb-1">Target Market</label>
-                                <select value={countryPicker} onChange={e => setCountryPicker(e.target.value)} className="px-3 py-2 border rounded-lg text-xs font-bold">
-                                    <option value="All">All Markets</option>
-                                    <option value="TW">Taiwan</option>
-                                    <option value="TH">Thailand</option>
-                                    <option value="JP">Japan</option>
-                                </select>
-                            </div>
-                            <button onClick={handleSearch} className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black shadow-xl ml-auto flex gap-2"><Search size={16}/> Search</button>
-                        </section>
+                        <div className="bg-white p-4 rounded-xl border shadow-sm flex gap-4 items-center">
+                            <span className="text-xs font-bold uppercase text-slate-400">Target Country:</span>
+                            <select value={filter} onChange={e => setFilter(e.target.value)} className="border p-2 rounded text-sm font-bold">
+                                <option value="All">All Markets 🌍</option>
+                                <option value="TW">Taiwan 🇹🇼</option>
+                                <option value="TH">Thailand 🇹🇭</option>
+                                <option value="JP">Japan 🇯🇵</option>
+                            </select>
+                        </div>
 
-                        {/* 차트 영역 */}
-                        <div ref={dashboardRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                                <h3 className="font-black text-slate-800 text-xs uppercase mb-4 flex gap-2"><BarChart2 size={16} className="text-[#00B900]"/> Sentiment Overview</h3>
-                                <div className="h-48 w-full">
-                                    <ResponsiveContainer>
-                                        <BarChart data={sentimentStats}>
+                        {/* 차트 & 요약 영역 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white p-6 rounded-xl border shadow-sm">
+                                <h3 className="font-bold text-slate-700 mb-4">📊 Sentiment Analysis</h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={chartData}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
-                                            <YAxis fontSize={10} axisLine={false} tickLine={false} />
+                                            <XAxis dataKey="name" fontSize={12} />
+                                            <YAxis fontSize={12} />
                                             <Tooltip />
                                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                                                {sentimentStats.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                                                {chartData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
                                             </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
                             </div>
-                             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                                <h3 className="font-black text-slate-800 text-xs uppercase mb-4 flex gap-2"><PieChart size={16} className="text-blue-500"/> Insight Summary</h3>
-                                <p className="text-sm font-bold text-slate-600 leading-relaxed">
-                                    Analyze {filteredData.length} records. predominantly {sentimentStats[0].name} sentiment.
-                                    Key focus areas: {CATEGORIES[0]}, {CATEGORIES[1]}.
+                            
+                            <div className="bg-white p-6 rounded-xl border shadow-sm flex flex-col justify-center">
+                                <h3 className="font-bold text-slate-700 mb-2">💡 AI Insight</h3>
+                                <p className="text-slate-600 leading-relaxed text-sm">
+                                    Currently showing <strong>{filteredData.length}</strong> feedback items.
+                                    <br/><br/>
+                                    The dominant sentiment is 
+                                    <strong style={{color: chartData.sort((a,b)=>b.count-a.count)[0].color}}> {chartData.sort((a,b)=>b.count-a.count)[0].name}</strong>.
+                                    <br/>
+                                    Main issues reported in <strong>{filter === 'All' ? 'Global Market' : filter}</strong> relate to payment UX speed.
                                 </p>
                             </div>
                         </div>
 
                         {/* 리스트 영역 */}
-                        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b flex justify-between items-center">
-                                <h2 className="font-black text-slate-800 text-xs uppercase flex gap-2"><MessageSquare size={16} className="text-[#00B900]"/> Feedbacks</h2>
-                                <span className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded text-slate-500">{filteredData.length} items</span>
+                        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                            <div className="px-6 py-4 border-b bg-slate-50">
+                                <h3 className="font-bold text-slate-700 text-sm">💬 Recent Feedbacks</h3>
                             </div>
-                            <div className="overflow-x-auto">
+                            <div className="max-h-96 overflow-y-auto">
                                 <table className="w-full text-sm text-left">
-                                    <thead className="bg-slate-50 text-slate-500 font-black uppercase text-[10px]">
-                                        <tr><th className="px-6 py-3">Source</th><th className="px-6 py-3">Date</th><th className="px-6 py-3">Region</th><th className="px-6 py-3">Sentiment</th><th className="px-6 py-3">Content</th></tr>
+                                    <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                                        <tr>
+                                            <th className="px-6 py-3">Source</th>
+                                            <th className="px-6 py-3">Country</th>
+                                            <th className="px-6 py-3">Sentiment</th>
+                                            <th className="px-6 py-3">Content</th>
+                                        </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {paginatedData.map(item => (
-                                            <tr key={item.id} className="hover:bg-slate-50 transition">
-                                                <td className="px-6 py-3 font-bold text-xs">{item.source}</td>
-                                                <td className="px-6 py-3 text-slate-400 text-[10px] font-bold">{item.date}</td>
-                                                <td className="px-6 py-3"><span className="px-2 py-0.5 bg-slate-900 text-white rounded text-[9px] font-bold">{item.country}</span></td>
+                                        {filteredData.map((item) => (
+                                            <tr key={item.id} className="hover:bg-slate-50">
+                                                <td className="px-6 py-3 font-bold">{item.source}</td>
+                                                <td className="px-6 py-3">{item.country}</td>
                                                 <td className="px-6 py-3">
-                                                    <span className={`font-black text-[10px] flex gap-1 items-center ${item.sentiment === 'Positive' ? 'text-green-600' : item.sentiment === 'Negative' ? 'text-red-600' : 'text-slate-400'}`}>
-                                                        {item.sentiment === 'Positive' ? <Smile size={12}/> : item.sentiment === 'Negative' ? <Frown size={12}/> : <Meh size={12}/>} {item.sentiment}
-                                                    </span>
+                                                    {item.sentiment === 'Positive' ? '😀 Positive' : 
+                                                     item.sentiment === 'Negative' ? '😡 Negative' : '😐 Neutral'}
                                                 </td>
-                                                <td className="px-6 py-3 text-xs font-bold text-slate-700 truncate max-w-xs">{item.originalContent}</td>
+                                                <td className="px-6 py-3 text-slate-600">{item.content}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                            {/* 페이지네이션 */}
-                            <div className="px-6 py-4 bg-slate-50 border-t flex justify-center gap-2">
-                                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="p-2 bg-white border rounded hover:bg-slate-100 disabled:opacity-50"><ChevronLeft size={14}/></button>
-                                <span className="text-xs font-bold flex items-center text-slate-500">Page {currentPage} of {totalPages}</span>
-                                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="p-2 bg-white border rounded hover:bg-slate-100 disabled:opacity-50"><ChevronRight size={14}/></button>
-                            </div>
-                        </section>
+                        </div>
                     </main>
                 </div>
             );
