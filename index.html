@@ -6,7 +6,7 @@
     <title>LINE Pay VOC Insights (Taiwan)</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* 기본 스타일 (대시보드 화면용) */
+        /* 기본 스타일 */
         :root { --primary: #00B900; --bg-gray: #F8FAFC; --border: #E2E8F0; --text-dark: #1E293B; --text-gray: #64748B; --pos: #00B900; --neu: #94A3B8; --neg: #EF4444; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-gray); color: var(--text-dark); padding-bottom: 40px; }
@@ -15,9 +15,13 @@
         .font-bold { font-weight: 700; } .text-xs { font-size: 12px; }
         .card { background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .btn { padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
-        .btn-primary { background: #2563EB; color: white; } .btn-dark { background: #334155; color: white; } .btn-dark:hover { background: #1E293B; }
-        .btn-copy { background: #7C3AED; color: white; } .btn-upload { background: #059669; color: white; }
-        .btn-report { background: #F59E0B; color: white; } /* 리포트 버튼 색상 */
+        
+        /* 버튼 색상들 */
+        .btn-upload { background: #059669; color: white; } 
+        .btn-primary { background: #2563EB; color: white; } 
+        .btn-copy { background: #7C3AED; color: white; } 
+        .btn-report { background: #F59E0B; color: white; }
+        .btn-dark { background: #334155; color: white; } .btn-dark:hover { background: #1E293B; }
         
         header { background: white; border-bottom: 1px solid var(--border); padding: 0 24px; height: 60px; position: sticky; top: 0; z-index: 100; }
         .logo-box { background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
@@ -25,6 +29,8 @@
         .filter-group label { display: block; font-size: 11px; font-weight: 800; color: var(--text-gray); margin-bottom: 6px; text-transform: uppercase; }
         .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 160px; }
         .search-btn { background: #0F172A; color: white; padding: 8px 30px; border-radius: 6px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; height: 38px; margin-top: 18px; }
+        
+        /* 그리드 & 레이아웃 */
         .grid-dashboard { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1600px; margin: 0 auto; padding: 0 24px; }
         @media (min-width: 1200px) { .grid-dashboard { grid-template-columns: 1fr 1fr 1fr; } }
         .ai-box { border-left: 4px solid #8B5CF6; background: #F5F3FF; }
@@ -38,6 +44,7 @@
         .cat-table th { text-align: left; padding: 8px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid var(--border); }
         .cat-table td { padding: 10px 8px; border-bottom: 1px solid #F1F5F9; font-weight: 600; }
         .text-pos { color: var(--pos); } .text-neg { color: var(--neg); } .text-neu { color: var(--neu); }
+        
         .list-container { max-width: 1600px; margin: 24px auto; padding: 0 24px; }
         .main-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .main-table th { text-align: left; padding: 12px 16px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); }
@@ -50,14 +57,12 @@
         .page-btn { background: white; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
         .page-btn.active { background: #0F172A; color: white; border-color: #0F172A; }
 
-        /* 모달 스타일 (리포트 미리보기) */
+        /* 모달 스타일 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; width: 900px; max-height: 90vh; border-radius: 16px; padding: 0; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 24px; overflow-y: auto; background: #f3f4f6; }
         .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
-        
-        /* 이메일용 리포트 프리뷰 스타일 (실제 복사되는 영역) */
         .report-preview { background: white; padding: 40px; margin: 0 auto; max-width: 800px; border: 1px solid #e5e7eb; }
     </style>
 </head>
@@ -72,6 +77,7 @@
             <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleFileUpload(event)">
             <button class="btn btn-upload" onclick="document.getElementById('excelInput').click()">📤 Upload Excel</button>
             <button class="btn btn-primary" onclick="downloadCSV()">📥 Download CSV</button>
+            <button class="btn btn-copy" onclick="copyForConfluence()">📋 Copy for Confluence</button>
             <button class="btn btn-report" onclick="openReportModal()">📝 Create Report</button>
         </div>
     </header>
@@ -170,7 +176,7 @@
     </div>
 
     <script>
-        // --- 1. 기본 Mock Data ---
+        // --- 1. 기본 Mock Data (100% Taiwan) ---
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
         const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
         function randomDate(start, end) { return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString().split('T')[0]; }
@@ -201,7 +207,6 @@
         const itemsPerPage = 8;
         let filteredData = [];
 
-        // --- 기능 로직들 ---
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -255,10 +260,7 @@
             updateCharts(data); updateTables(data); renderList(data);
         }
 
-        function updateCharts(data) { /* 차트 업데이트 (생략) */ }
-        function updateTables(data) {
-            /* 테이블 업데이트 (생략 - 기존 로직 유지) */
-            // 간단하게 유지 위해 차트 값만 업데이트 (테이블은 Report 생성시 재계산)
+        function updateCharts(data) {
             const total = data.length || 1;
             const pos = data.filter(d => d.sentiment === 'Positive').length;
             const neu = data.filter(d => d.sentiment === 'Neutral').length;
@@ -268,15 +270,14 @@
             document.getElementById('barNeu').style.height = `${Math.max(pNeu, 2)}%`;
             document.getElementById('barNeg').style.height = `${Math.max(pNeg, 2)}%`;
             document.getElementById('valPos').innerText = `${pPos}%`; document.getElementById('valNeu').innerText = `${pNeu}%`; document.getElementById('valNeg').innerText = `${pNeg}%`;
-            
-            // 소스 테이블
+        }
+
+        function updateTables(data) {
             const sMap = {}; const uniqueSources = [...new Set(data.map(d => d.source))];
             uniqueSources.forEach(s => sMap[s] = { pos:0, neu:0, neg:0 });
             data.forEach(d => { const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu'; if(sMap[d.source]) sMap[d.source][k]++; });
             let sHtml = ''; uniqueSources.forEach(s => { const r = sMap[s]; sHtml += `<tr><td>${s}</td><td class="text-pos">${r.pos}</td><td class="text-neu">${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`; });
             document.getElementById('sourceTable').innerHTML = sHtml;
-            
-            // 카테고리 테이블
             const cMap = {}; const uniqueCats = [...new Set(data.map(d => d.category))];
             uniqueCats.forEach(c => cMap[c] = { pos:0, neu:0, neg:0 });
             data.forEach(d => { const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu'; if(cMap[d.category]) cMap[d.category][k]++; });
@@ -301,15 +302,46 @@
 
         function setPage(p) { currentPage = p; renderList(filteredData); }
         function changePage(d) { const totalPages = Math.ceil(filteredData.length / itemsPerPage); if(currentPage + d > 0 && currentPage + d <= totalPages) { currentPage += d; renderList(filteredData); } }
-        function downloadCSV() { /* CSV 다운로드 (기존 동일) */ }
-        function copyForConfluence() { /* 컨플루언스 복사 (기존 동일) */ }
+        
+        function downloadCSV() {
+            let csvContent = "\uFEFFSource,Date,Country,Sentiment,Category,Original Content,Korean Translation,Link\n";
+            filteredData.forEach(row => {
+                const cleanContent = `"${(row.content||'').replace(/"/g, '""')}"`;
+                const cleanTrans = `"${(row.translation||'').replace(/"/g, '""')}"`;
+                csvContent += `${row.source},${row.date},${row.country},${row.sentiment},${row.category},${cleanContent},${cleanTrans},${row.link}\n`;
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `VOC_Report_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
-        // ✅ [NEW] 리포트 생성 및 모달 열기
+        // ✅ 복구된 Confluence 복사 기능
+        async function copyForConfluence() {
+            let tableHtml = `<table border="1"><thead><tr style="background:#f2f2f2;"><th>Source</th><th>Date</th><th>Country</th><th>Sentiment</th><th>Category</th><th>Content</th><th>Translation</th><th>Link</th></tr></thead><tbody>`;
+            filteredData.slice(0, 50).forEach(row => {
+                const color = row.sentiment === 'Positive' ? 'green' : row.sentiment === 'Negative' ? 'red' : 'gray';
+                const linkCell = row.link && row.link.startsWith('http') ? `<a href="${row.link}">Link</a>` : '-';
+                tableHtml += `<tr><td>${row.source}</td><td>${row.date}</td><td>${row.country}</td><td style="color:${color};font-weight:bold;">${row.sentiment}</td><td>${row.category}</td><td>${row.content}</td><td>${row.translation}</td><td>${linkCell}</td></tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            try {
+                const blob = new Blob([tableHtml], { type: 'text/html' });
+                const textBlob = new Blob(["HTML table copied"], { type: 'text/plain' });
+                await navigator.clipboard.write([new ClipboardItem({'text/html': blob, 'text/plain': textBlob})]);
+                alert("Table copied for Confluence! Press Ctrl+V to paste.");
+            } catch (err) { alert("Failed to copy. Please check browser permissions."); }
+        }
+
+        // ✅ 리포트 생성 및 모달 열기
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
             
-            // 1. 현재 필터링된 데이터 기반으로 통계 계산
             const cMap = {};
             const uniqueCats = [...new Set(filteredData.map(d => d.category))];
             uniqueCats.forEach(c => cMap[c] = { pos:0, neu:0, neg:0, total:0 });
@@ -318,15 +350,11 @@
                 if(cMap[d.category]) { cMap[d.category][k]++; cMap[d.category].total++; }
             });
 
-            // 2. Real VOC 정렬 (Positive > Neutral > Negative)
             const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
-            const sortedVOC = [...filteredData].sort((a, b) => sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment]).slice(0, 15); // 상위 15개만
+            const sortedVOC = [...filteredData].sort((a, b) => sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment]).slice(0, 15);
 
-            // 3. 이메일 템플릿 생성 (Table-based Layout for Email Compatibility)
-            // 주의: 이메일은 Flexbox/Grid가 깨지므로 <table>을 사용하고, style을 인라인으로 넣어야 함.
             let reportHtml = `
                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto;">
-                    
                     <tr>
                         <td style="padding-bottom: 20px;">
                             <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">1. Overall Summary</h3>
@@ -345,7 +373,6 @@
                             </table>
                         </td>
                     </tr>
-
                     <tr>
                         <td style="padding-bottom: 30px;">
                             <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">2. Category & Key Issues</h3>
@@ -361,105 +388,31 @@
                                 </thead>
                                 <tbody>
             `;
-            
             uniqueCats.forEach(c => {
                 const r = cMap[c];
-                reportHtml += `
-                    <tr>
-                        <td style="padding: 10px;"><b>${c}</b></td>
-                        <td align="center" style="padding: 10px;">${r.total}</td>
-                        <td align="center" style="padding: 10px; color: #00B900;">${r.pos}</td>
-                        <td align="center" style="padding: 10px; color: #6B7280;">${r.neu}</td>
-                        <td align="center" style="padding: 10px; color: #EF4444;">${r.neg}</td>
-                    </tr>
-                `;
+                reportHtml += `<tr><td style="padding: 10px;"><b>${c}</b></td><td align="center" style="padding: 10px;">${r.total}</td><td align="center" style="padding: 10px; color: #00B900;">${r.pos}</td><td align="center" style="padding: 10px; color: #6B7280;">${r.neu}</td><td align="center" style="padding: 10px; color: #EF4444;">${r.neg}</td></tr>`;
             });
-
-            reportHtml += `
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                <tr>
-                                    <td width="40%" valign="top" style="padding-right: 20px;">
-                                        <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">3. Key Highlights</h3>
-                                        <div style="background-color: #fff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 15px;">
-                                            <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">Payment UX</div>
-                                            <div style="font-size: 12px; color: #666; margin-bottom: 15px;">주요 이슈: 결제 속도 및 인증 실패</div>
-                                            
-                                            <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">CS Response</div>
-                                            <div style="font-size: 12px; color: #666; margin-bottom: 15px;">주요 이슈: 응답 지연에 대한 불만 증가</div>
-                                            
-                                            <div style="font-size: 11px; color: #999; margin-top: 20px;">
-                                                * This section is generated based on top occurring categories.
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td width="60%" valign="top">
-                                        <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">4. Real VOC (Top 15)</h3>
-                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            `;
-
+            reportHtml += `</tbody></table></td></tr><tr><td><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="40%" valign="top" style="padding-right: 20px;"><h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">3. Key Highlights</h3><div style="background-color: #fff; border: 1px solid #E5E7EB; border-radius: 8px; padding: 15px;"><div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">Payment UX</div><div style="font-size: 12px; color: #666; margin-bottom: 15px;">주요 이슈: 결제 속도 및 인증 실패</div><div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">CS Response</div><div style="font-size: 12px; color: #666; margin-bottom: 15px;">주요 이슈: 응답 지연에 대한 불만 증가</div><div style="font-size: 11px; color: #999; margin-top: 20px;">* This section is generated based on top occurring categories.</div></div></td><td width="60%" valign="top"><h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px;">4. Real VOC (Top 15)</h3><table width="100%" cellpadding="0" cellspacing="0" border="0">`;
             sortedVOC.forEach(v => {
                 const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
                 const linkIcon = v.link ? `<a href="${v.link}" style="text-decoration:none; color:#999;">🔗</a>` : '';
-                
-                reportHtml += `
-                    <tr>
-                        <td style="padding-bottom: 15px; border-bottom: 1px solid #F3F4F6; margin-bottom: 15px;">
-                            <div style="font-size: 11px; color: #999; margin-bottom: 4px;">
-                                <b>${v.source}</b> | <span style="color:${color}; font-weight:bold;">${v.sentiment}</span> ${linkIcon}
-                            </div>
-                            <div style="font-size: 12px; color: #333; margin-bottom: 4px; font-weight:bold;">"${v.content}"</div>
-                            <div style="font-size: 11px; color: #666;">${v.translation}</div>
-                        </td>
-                    </tr>
-                `;
+                reportHtml += `<tr><td style="padding-bottom: 15px; border-bottom: 1px solid #F3F4F6; margin-bottom: 15px;"><div style="font-size: 11px; color: #999; margin-bottom: 4px;"><b>${v.source}</b> | <span style="color:${color}; font-weight:bold;">${v.sentiment}</span> ${linkIcon}</div><div style="font-size: 12px; color: #333; margin-bottom: 4px; font-weight:bold;">"${v.content}"</div><div style="font-size: 11px; color: #666;">${v.translation}</div></td></tr>`;
             });
-
-            reportHtml += `
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-            `;
-
+            reportHtml += `</table></td></tr></table></td></tr></table>`;
             template.innerHTML = reportHtml;
             modal.style.display = 'flex';
         }
 
-        function closeReportModal() {
-            document.getElementById('reportModal').style.display = 'none';
-        }
+        function closeReportModal() { document.getElementById('reportModal').style.display = 'none'; }
 
-        // ✅ 이메일용 복사 함수 (MIME Type 지정으로 깨짐 방지)
         async function copyEmailHtml() {
             const emailContent = document.getElementById('emailTemplate').innerHTML;
-            
-            // Clipboard API를 사용하여 HTML 형식 그대로 복사
             try {
                 const blobHtml = new Blob([emailContent], { type: 'text/html' });
                 const blobText = new Blob([document.getElementById('emailTemplate').innerText], { type: 'text/plain' });
-                
-                const data = [new ClipboardItem({
-                    'text/html': blobHtml,
-                    'text/plain': blobText
-                })];
-                
-                await navigator.clipboard.write(data);
+                await navigator.clipboard.write([new ClipboardItem({'text/html': blobHtml, 'text/plain': blobText})]);
                 alert("Report copied! You can now paste it into your email (Gmail, Outlook).");
-            } catch (err) {
-                console.error('Copy failed:', err);
-                alert("Copy failed. Please try selecting the text manually.");
-            }
+            } catch (err) { console.error('Copy failed:', err); alert("Copy failed. Please try selecting the text manually."); }
         }
 
         runSearch();
