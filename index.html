@@ -109,7 +109,7 @@
                 <label>TARGET COUNTRY</label>
                 <select id="countryFilter" class="filter-select">
                     <option value="All">All Countries</option>
-                    <option value="TW">Taiwan</option>
+                    <option value="TW" selected>Taiwan</option>
                     <option value="Global">Global (Others)</option>
                 </select>
             </div>
@@ -217,9 +217,7 @@
             return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString().split('T')[0];
         }
 
-        // ✅ Mock Data: TW와 Global만 생성하도록 수정
         const MOCK_DATA = Array.from({ length: 200 }).map((_, i) => {
-            // 여기만 수정했습니다: JP, TH 제거
             const countries = ['TW', 'TW', 'TW', 'Global']; 
             const sentiments = ['Positive', 'Neutral', 'Negative'];
             const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
@@ -240,8 +238,11 @@
             };
         });
 
+        // 초기 날짜 및 필터 값 설정
         document.getElementById('startDate').value = '2024-01-01';
         document.getElementById('endDate').value = '2025-12-31';
+        // JS에서도 확실하게 Taiwan을 기본값으로 지정
+        document.getElementById('countryFilter').value = 'TW';
 
         let currentPage = 1;
         const itemsPerPage = 8;
@@ -442,6 +443,7 @@
             }
         }
 
+        // 초기 실행
         runSearch();
     </script>
 </body>
