@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE Pay VOC Insights</title>
     <style>
-        /* ✅ 보안망 통과를 위한 자체 디자인 시스템 (Tailwind 없이 직접 구현) 
-           외부에서 다운로드하는 파일이 0개이므로 절대 하얀 화면이 뜨지 않습니다.
-        */
+        /* 기본 스타일 설정 (외부 라이브러리 없음) */
         :root {
             --primary: #00B900;
             --bg-gray: #F8FAFC;
@@ -23,82 +21,59 @@
         body { background-color: var(--bg-gray); color: var(--text-dark); padding-bottom: 40px; }
 
         /* 레이아웃 유틸리티 */
-        .w-full { width: 100%; }
         .flex { display: flex; align-items: center; }
         .justify-between { justify-content: space-between; }
-        .gap-2 { gap: 8px; } .gap-4 { gap: 16px; }
-        .mb-4 { margin-bottom: 16px; } .mt-4 { margin-top: 16px; }
+        /* 요청 4: 필터 간격 넓힘 */
+        .gap-2 { gap: 8px; } .gap-4 { gap: 16px; } .gap-6 { gap: 32px; } 
         .p-4 { padding: 16px; } .p-6 { padding: 24px; }
-        .font-bold { font-weight: 700; } .text-xs { font-size: 12px; } .text-sm { font-size: 14px; }
-        .uppercase { text-transform: uppercase; }
+        .font-bold { font-weight: 700; } .text-xs { font-size: 12px; }
 
-        /* 카드 스타일 */
+        /* 카드 및 버튼 스타일 */
         .card { background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        
-        /* 버튼 스타일 */
         .btn { padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
         .btn-primary { background: #2563EB; color: white; }
         .btn-dark { background: #334155; color: white; }
         .btn-dark:hover { background: #1E293B; }
-        
+        .btn-copy { background: #7C3AED; color: white; } /* Confluence Copy 색상 */
+
         /* 헤더 */
         header { background: white; border-bottom: 1px solid var(--border); padding: 0 24px; height: 60px; position: sticky; top: 0; z-index: 100; }
         .logo-box { background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
 
         /* 필터 영역 */
-        .filter-bar { background: white; padding: 16px 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-        .filter-group label { display: block; font-size: 10px; font-weight: 800; color: var(--text-gray); margin-bottom: 4px; uppercase; }
-        .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 140px; }
-        .search-btn { background: #0F172A; color: white; padding: 8px 24px; border-radius: 6px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; }
+        .filter-bar { background: white; padding: 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+        .filter-group label { display: block; font-size: 11px; font-weight: 800; color: var(--text-gray); margin-bottom: 6px; text-transform: uppercase; }
+        .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 160px; }
+        .search-btn { background: #0F172A; color: white; padding: 8px 30px; border-radius: 6px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; height: 38px; margin-top: 18px; }
+        .search-btn:hover { background: #334155; }
 
-        /* 대시보드 그리드 (3단 레이아웃) */
-        .grid-dashboard { 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 24px; 
-            max-width: 1600px; 
-            margin: 0 auto; 
-            padding: 0 24px; 
-        }
+        /* 대시보드 그리드 */
+        .grid-dashboard { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1600px; margin: 0 auto; padding: 0 24px; }
         @media (min-width: 1200px) { .grid-dashboard { grid-template-columns: 1fr 1fr 1fr; } }
 
-        /* 1. AI 인사이트 박스 */
+        /* AI 인사이트 & 차트 */
         .ai-box { border-left: 4px solid #8B5CF6; background: #F5F3FF; }
-        .ai-title { color: #7C3AED; font-weight: 800; font-size: 12px; margin-bottom: 12px; display: flex; items-center; gap: 6px; }
-
-        /* 2. 차트 영역 */
         .chart-row { margin-bottom: 12px; }
         .chart-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
         .bar-bg { background: #F1F5F9; height: 24px; border-radius: 4px; overflow: hidden; display: flex; }
-        .bar-seg { height: 100%; transition: width 0.5s; }
-        .bg-pos { background: var(--pos); } .bg-neu { background: var(--neu); } .bg-neg { background: var(--neg); }
-
-        /* 3. 카테고리 테이블 */
         .cat-table { width: 100%; font-size: 12px; border-collapse: collapse; }
         .cat-table th { text-align: left; padding: 8px; color: var(--text-gray); font-size: 10px; border-bottom: 1px solid var(--border); }
         .cat-table td { padding: 8px; border-bottom: 1px solid #F1F5F9; font-weight: 600; }
         .text-pos { color: var(--pos); } .text-neg { color: var(--neg); }
 
-        /* 메인 리스트 테이블 */
+        /* 리스트 테이블 */
         .list-container { max-width: 1600px; margin: 24px auto; padding: 0 24px; }
         .main-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .main-table th { text-align: left; padding: 12px 16px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); }
         .main-table td { padding: 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
         .main-table tr:hover { background: #FAFAFA; }
-
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; color: white; display: inline-block; }
         .badge-country { background: #0F172A; }
-        .sentiment-icon { font-weight: 800; font-size: 11px; display: flex; align-items: center; gap: 4px; }
-        .s-pos { color: var(--pos); } .s-neg { color: var(--neg); } .s-neu { color: #94A3B8; }
-        
-        .content-box { font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
-        .trans-box { font-size: 12px; color: #64748B; font-style: italic; }
         .tag-cat { background: #F1F5F9; color: #475569; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 
         /* 페이지네이션 */
         .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
         .page-btn { background: white; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
-        .page-btn:disabled { opacity: 0.5; }
         .page-btn.active { background: #0F172A; color: white; border-color: #0F172A; }
     </style>
 </head>
@@ -111,7 +86,7 @@
         </div>
         <div class="flex gap-2">
             <button class="btn btn-primary" onclick="downloadCSV()">📥 Excel Export</button>
-            <button class="btn btn-dark" onclick="alert('Copied to clipboard!')">📋 Copy for Confluence</button>
+            <button class="btn btn-copy" onclick="copyForConfluence()">📋 Copy for Confluence</button>
         </div>
     </header>
 
@@ -120,23 +95,24 @@
             <div class="filter-group">
                 <label>INQUIRY PERIOD</label>
                 <div class="flex gap-2">
-                    <input type="date" value="2024-03-01" class="filter-select">
+                    <input type="date" id="startDate" class="filter-select">
                     <span style="font-weight:700; color:#cbd5e1;">~</span>
-                    <input type="date" value="2024-03-31" class="filter-select">
+                    <input type="date" id="endDate" class="filter-select">
                 </div>
             </div>
             <div class="filter-group">
                 <label>TARGET COUNTRY</label>
-                <select id="countryFilter" class="filter-select" onchange="updateDashboard()">
+                <select id="countryFilter" class="filter-select">
                     <option value="All">All Countries</option>
-                    <option value="TW" selected>Taiwan</option>
+                    <option value="TW">Taiwan</option>
                     <option value="TH">Thailand</option>
                     <option value="JP">Japan</option>
+                    <option value="Global">Global (Others)</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label>SENTIMENT FILTER</label>
-                <select id="sentimentFilter" class="filter-select" onchange="updateDashboard()">
+                <select id="sentimentFilter" class="filter-select">
                     <option value="All">All Sentiments</option>
                     <option value="Positive">Positive</option>
                     <option value="Neutral">Neutral</option>
@@ -144,58 +120,35 @@
                 </select>
             </div>
         </div>
-        <button class="search-btn" onclick="updateDashboard()">🔍 Search</button>
+        <button class="search-btn" onclick="runSearch()">🔍 Search</button>
     </div>
 
     <div class="grid-dashboard">
-        
         <div class="card p-6 ai-box">
-            <div class="ai-title">🔮 AI STRATEGIC INSIGHTS</div>
-            <div class="mb-4">
-                <span style="background:rgba(139, 92, 246, 0.1); color:#7C3AED; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">ENGLISH</span>
-                <p id="aiEn" style="font-size:13px; font-weight:600; font-style:italic; margin-top:6px; line-height:1.5; color:#334155;">
-                    Analyzing...
-                </p>
-            </div>
+            <div style="color:#7C3AED; font-weight:800; font-size:12px; margin-bottom:12px;">🔮 AI STRATEGIC INSIGHTS</div>
+            <p id="aiEn" style="font-size:13px; font-weight:600; font-style:italic; line-height:1.5; color:#334155; margin-bottom:12px;">Analyzing...</p>
             <div style="border-top:1px solid rgba(139, 92, 246, 0.2); padding-top:12px;">
-                <span style="background:rgba(139, 92, 246, 0.1); color:#7C3AED; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">KOREAN SUMMARY</span>
-                <p id="aiKo" style="font-size:12px; font-weight:500; margin-top:6px; line-height:1.5; color:#475569;">
-                    분석 중...
-                </p>
+                <p id="aiKo" style="font-size:12px; font-weight:500; line-height:1.5; color:#475569;">분석 중...</p>
             </div>
         </div>
 
         <div class="card p-6">
-            <div class="ai-title" style="color:#1E293B;">📊 SENTIMENT & SOURCE METRICS</div>
-            
-            <div style="display:flex; align-items:flex-end; height:100px; gap:12px; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #f1f5f9;">
-                <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
-                    <span id="pctPos" style="font-size:10px; font-weight:700; color:var(--pos);">0%</span>
-                    <div id="barPos" style="width:100%; background:var(--pos); border-radius:4px 4px 0 0; transition:height 0.5s;"></div>
-                    <span style="font-size:10px; font-weight:700; color:#94a3b8;">POS</span>
-                </div>
-                <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
-                    <span id="pctNeu" style="font-size:10px; font-weight:700; color:#94a3b8;">0%</span>
-                    <div id="barNeu" style="width:100%; background:#cbd5e1; border-radius:4px 4px 0 0; transition:height 0.5s;"></div>
-                    <span style="font-size:10px; font-weight:700; color:#94a3b8;">NEU</span>
-                </div>
-                <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
-                    <span id="pctNeg" style="font-size:10px; font-weight:700; color:var(--neg);">0%</span>
-                    <div id="barNeg" style="width:100%; background:var(--neg); border-radius:4px 4px 0 0; transition:height 0.5s;"></div>
-                    <span style="font-size:10px; font-weight:700; color:#94a3b8;">NEG</span>
-                </div>
+            <div style="color:#1E293B; font-weight:800; font-size:12px; margin-bottom:12px;">📊 SENTIMENT METRICS</div>
+            <div style="display:flex; align-items:flex-end; height:80px; gap:12px; margin-bottom:12px;">
+                <div style="flex:1; text-align:center;"><div id="barPos" style="background:var(--pos); width:100%; height:0%; border-radius:4px 4px 0 0; transition:height 0.5s;"></div><span id="pctPos" style="font-size:10px; font-weight:700;">0%</span></div>
+                <div style="flex:1; text-align:center;"><div id="barNeu" style="background:#cbd5e1; width:100%; height:0%; border-radius:4px 4px 0 0; transition:height 0.5s;"></div><span id="pctNeu" style="font-size:10px; font-weight:700;">0%</span></div>
+                <div style="flex:1; text-align:center;"><div id="barNeg" style="background:var(--neg); width:100%; height:0%; border-radius:4px 4px 0 0; transition:height 0.5s;"></div><span id="pctNeg" style="font-size:10px; font-weight:700;">0%</span></div>
             </div>
-
             <table class="cat-table">
-                <thead><tr><th>SOURCE</th><th>TOTAL</th><th class="text-pos">POS</th><th>NEU</th><th class="text-neg">NEG</th></tr></thead>
+                <thead><tr><th>SOURCE</th><th class="text-pos">POS</th><th>NEU</th><th class="text-neg">NEG</th></tr></thead>
                 <tbody id="sourceTable"></tbody>
             </table>
         </div>
 
         <div class="card p-6">
-            <div class="ai-title" style="color:#1E293B;">🔢 CATEGORY SENTIMENT STATUS</div>
+            <div style="color:#1E293B; font-weight:800; font-size:12px; margin-bottom:12px;">🔢 CATEGORY STATUS</div>
             <table class="cat-table">
-                <thead><tr><th>CATEGORY</th><th>TOTAL</th><th class="text-pos">POS</th><th>NEU</th><th class="text-neg">NEG</th></tr></thead>
+                <thead><tr><th>CATEGORY</th><th class="text-pos">POS</th><th>NEU</th><th class="text-neg">NEG</th></tr></thead>
                 <tbody id="catTable"></tbody>
             </table>
         </div>
@@ -203,10 +156,8 @@
 
     <div class="list-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div class="flex gap-2">
-                <span style="font-weight:800; font-size:12px; color:#0F172A;">💬 VERIFIED USER VOICES</span>
-            </div>
-            <span id="filterLabel" style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase;">APPLIED FILTERS: TAIWAN • ALL</span>
+            <span style="font-weight:800; font-size:12px; color:#0F172A;">💬 VERIFIED USER VOICES <span id="totalCount">(0)</span></span>
+            <span id="filterLabel" style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase;">APPLIED FILTERS: -</span>
         </div>
 
         <div class="card" style="padding:0; overflow:hidden;">
@@ -227,7 +178,7 @@
                     <tbody id="listBody"></tbody>
                 </table>
             </div>
-            <div class="pagination" style="padding: 16px; border-top:1px solid var(--border); margin-top:0;">
+            <div class="pagination" style="padding:16px; border-top:1px solid var(--border); margin-top:0;">
                 <button class="page-btn" onclick="changePage(-1)">Prev</button>
                 <div id="pageNumbers" class="flex gap-1"></div>
                 <button class="page-btn" onclick="changePage(1)">Next</button>
@@ -236,66 +187,84 @@
     </div>
 
     <script>
-        // ✅ 1. 데이터 생성 (Mock Data Generator)
+        // ✅ 데이터 생성 (요청 5: 날짜 검색 테스트를 위해 2024~2025년 데이터 생성)
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
         const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
         
-        const MOCK_DATA = Array.from({ length: 150 }).map((_, i) => {
+        // 날짜 생성 함수 (2024-01-01 ~ 2025-12-31 사이 랜덤)
+        function randomDate(start, end) {
+            return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString().split('T')[0];
+        }
+
+        const MOCK_DATA = Array.from({ length: 200 }).map((_, i) => {
             const countries = ['TW', 'TH', 'JP', 'Global'];
             const sentiments = ['Positive', 'Neutral', 'Negative'];
             const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
             const country = countries[i % 4];
             const category = CATEGORIES[i % 5];
+            const date = randomDate(new Date(2024, 0, 1), new Date(2025, 11, 31));
             
             return {
                 id: i,
                 source: SOURCES[i % 4],
-                date: `2024-03-${((i % 28) + 1).toString().padStart(2, '0')}`,
+                date: date,
                 country: country,
                 sentiment: sentiment,
                 category: category,
-                content: `[${category}] User feedback from ${country}. The ${category.toLowerCase()} experience was ${sentiment.toLowerCase()}.`,
-                translation: `[${category}] ${country} 사용자 피드백입니다. ${category} 경험이 ${sentiment === 'Positive' ? '훌륭했습니다' : '보통이었습니다'}.`,
-                link: '#'
+                content: `[${category}] Feedback from ${country}. The service experience was ${sentiment.toLowerCase()}.`,
+                translation: `[${category}] ${country} 피드백. 서비스 경험이 ${sentiment === 'Positive' ? '좋았습니다' : '보통/나빴습니다'}.`,
+                link: `https://voc.linepay.com/id/${i}`
             };
         });
 
+        // 초기 날짜 설정 (최근 1년으로 설정해둠)
+        document.getElementById('startDate').value = '2024-01-01';
+        document.getElementById('endDate').value = '2025-12-31';
+
         let currentPage = 1;
         const itemsPerPage = 8;
-        
-        function updateDashboard() {
+        let filteredData = []; // 현재 필터링된 데이터 저장용
+
+        // 🔍 메인 검색 함수 (요청 5: 날짜 검색 로직 포함)
+        function runSearch() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
             const countryVal = document.getElementById('countryFilter').value;
             const sentimentVal = document.getElementById('sentimentFilter').value;
+
+            // 필터링 로직
+            filteredData = MOCK_DATA.filter(d => {
+                const dateMatch = d.date >= startDate && d.date <= endDate;
+                const countryMatch = countryVal === 'All' || d.country === countryVal;
+                const sentimentMatch = sentimentVal === 'All' || d.sentiment === sentimentVal;
+                return dateMatch && countryMatch && sentimentMatch;
+            });
+
+            // 데이터 정렬 (최신순)
+            filteredData.sort((a, b) => b.date.localeCompare(a.date));
+
+            // UI 업데이트
+            currentPage = 1;
+            updateUI(filteredData);
             
-            // 필터링
-            const filtered = MOCK_DATA.filter(d => 
-                (countryVal === 'All' || d.country === countryVal) &&
-                (sentimentVal === 'All' || d.sentiment === sentimentVal)
-            );
-
-            // 1. AI Insight 업데이트
-            const topSent = getTopSentiment(filtered);
-            const marketName = countryVal === 'All' ? 'Global' : countryVal;
-            document.getElementById('aiEn').innerText = `"User feedback in ${marketName} reveals significant ${topSent} sentiment regarding Payment UX. Operational focus is required on Merchant Networks."`;
-            document.getElementById('aiKo').innerText = `"${marketName} 사용자 피드백 분석 결과, 결제 UX에 대해 ${topSent === 'Positive' ? '긍정적' : '부정적/중립적'} 반응이 우세합니다. 가맹점 네트워크에 대한 운영 집중이 필요합니다."`;
-
-            // 2. 차트 업데이트
-            updateCharts(filtered);
-
-            // 3. 소스/카테고리 테이블 업데이트
-            updateSummaryTables(filtered);
-
-            // 4. 리스트 업데이트
-            renderList(filtered);
-
             // 필터 라벨 업데이트
-            document.getElementById('filterLabel').innerText = `APPLIED FILTERS: ${countryVal.toUpperCase()} • ${sentimentVal.toUpperCase()}`;
+            document.getElementById('filterLabel').innerText = `FILTERS: ${startDate}~${endDate} • ${countryVal} • ${sentimentVal}`;
         }
 
-        function getTopSentiment(data) {
+        function updateUI(data) {
+            document.getElementById('totalCount').innerText = `(${data.length})`;
+            
+            // AI 인사이트
             const pos = data.filter(d => d.sentiment === 'Positive').length;
             const neg = data.filter(d => d.sentiment === 'Negative').length;
-            return pos >= neg ? 'Positive' : 'Negative';
+            const topSent = pos >= neg ? 'Positive' : 'Negative';
+            document.getElementById('aiEn').innerText = `"Analysis of ${data.length} records shows predominant ${topSent} sentiment."`;
+            document.getElementById('aiKo').innerText = `"${data.length}건 분석 결과, ${topSent === 'Positive' ? '긍정적' : '부정적'} 반응이 우세합니다."`;
+
+            // 차트 & 테이블 업데이트
+            updateCharts(data);
+            updateTables(data);
+            renderList(data);
         }
 
         function updateCharts(data) {
@@ -308,43 +277,41 @@
             const pNeu = Math.round((neu/total)*100);
             const pNeg = Math.round((neg/total)*100);
 
-            document.getElementById('barPos').style.height = `${Math.max(pPos, 1)}%`;
-            document.getElementById('barNeu').style.height = `${Math.max(pNeu, 1)}%`;
-            document.getElementById('barNeg').style.height = `${Math.max(pNeg, 1)}%`;
-
+            document.getElementById('barPos').style.height = `${Math.max(pPos, 5)}%`;
+            document.getElementById('barNeu').style.height = `${Math.max(pNeu, 5)}%`;
+            document.getElementById('barNeg').style.height = `${Math.max(pNeg, 5)}%`;
+            
             document.getElementById('pctPos').innerText = `${pPos}%`;
             document.getElementById('pctNeu').innerText = `${pNeu}%`;
             document.getElementById('pctNeg').innerText = `${pNeg}%`;
         }
 
-        function updateSummaryTables(data) {
-            // 소스 테이블
+        function updateTables(data) {
+            // Source Table
             const sMap = {};
-            SOURCES.forEach(s => sMap[s] = { pos:0, neu:0, neg:0, total:0 });
+            SOURCES.forEach(s => sMap[s] = { pos:0, neu:0, neg:0 });
             data.forEach(d => {
                 const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu';
-                if(sMap[d.source]) { sMap[d.source][k]++; sMap[d.source].total++; }
+                if(sMap[d.source]) sMap[d.source][k]++;
             });
-
             let sHtml = '';
             SOURCES.forEach(s => {
                 const r = sMap[s];
-                sHtml += `<tr><td>${s}</td><td style="font-weight:800">${r.total}</td><td class="text-pos">${r.pos}</td><td style="color:#94a3b8">${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`;
+                sHtml += `<tr><td>${s}</td><td class="text-pos">${r.pos}</td><td>${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`;
             });
             document.getElementById('sourceTable').innerHTML = sHtml;
 
-            // 카테고리 테이블
+            // Category Table
             const cMap = {};
-            CATEGORIES.forEach(c => cMap[c] = { pos:0, neu:0, neg:0, total:0 });
+            CATEGORIES.forEach(c => cMap[c] = { pos:0, neu:0, neg:0 });
             data.forEach(d => {
                 const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu';
-                if(cMap[d.category]) { cMap[d.category][k]++; cMap[d.category].total++; }
+                if(cMap[d.category]) cMap[d.category][k]++;
             });
-            
             let cHtml = '';
             CATEGORIES.forEach(c => {
                 const r = cMap[c];
-                cHtml += `<tr><td>${c}</td><td style="font-weight:800">${r.total}</td><td class="text-pos">${r.pos}</td><td style="color:#94a3b8">${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`;
+                cHtml += `<tr><td>${c}</td><td class="text-pos">${r.pos}</td><td>${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`;
             });
             document.getElementById('catTable').innerHTML = cHtml;
         }
@@ -355,31 +322,32 @@
             const pageData = data.slice(start, end);
             const tbody = document.getElementById('listBody');
             
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#94a3b8;">No data found within this period.</td></tr>';
+                document.getElementById('pageNumbers').innerHTML = '';
+                return;
+            }
+
             let html = '';
             pageData.forEach(item => {
-                const sentIcon = item.sentiment === 'Positive' ? '😀 Positive' : item.sentiment === 'Negative' ? '😡 Negative' : '😐 Neutral';
-                const sentClass = item.sentiment === 'Positive' ? 's-pos' : item.sentiment === 'Negative' ? 's-neg' : 's-neu';
+                const sentColor = item.sentiment === 'Positive' ? '#00B900' : item.sentiment === 'Negative' ? '#EF4444' : '#94A3B8';
                 
                 html += `
                     <tr>
                         <td style="font-weight:700;">${item.source}</td>
-                        <td style="color:#64748B; font-weight:600; font-size:12px;">${item.date}</td>
+                        <td style="color:#64748B;">${item.date}</td>
                         <td><span class="badge badge-country">${item.country}</span></td>
-                        <td><div class="sentiment-icon ${sentClass}">${sentIcon}</div></td>
+                        <td style="color:${sentColor}; font-weight:700;">${item.sentiment}</td>
                         <td><span class="tag-cat">${item.category}</span></td>
-                        <td style="width:30%;">
-                            <div class="content-box">"${item.content}"</div>
-                        </td>
-                        <td style="width:30%;">
-                            <div class="trans-box">${item.translation}</div>
-                        </td>
-                        <td><a href="#" style="color:#cbd5e1;">🔗</a></td>
+                        <td><div style="font-weight:600; font-size:12px;">"${item.content}"</div></td>
+                        <td><div style="font-size:12px; color:#64748B;">${item.translation}</div></td>
+                        <td><a href="${item.link}" target="_blank" style="text-decoration:none;">🔗</a></td>
                     </tr>
                 `;
             });
             tbody.innerHTML = html;
             
-            // 페이지네이션 버튼
+            // 페이지네이션
             const totalPages = Math.ceil(data.length / itemsPerPage);
             let pHtml = '';
             for(let i=1; i<=Math.min(5, totalPages); i++) {
@@ -388,45 +356,85 @@
             document.getElementById('pageNumbers').innerHTML = pHtml;
         }
 
-        function setPage(p) { currentPage = p; updateDashboard(); }
+        function setPage(p) { currentPage = p; renderList(filteredData); }
         function changePage(d) {
-            const countryVal = document.getElementById('countryFilter').value;
-            const sentimentVal = document.getElementById('sentimentFilter').value;
-            const filtered = MOCK_DATA.filter(d => 
-                (countryVal === 'All' || d.country === countryVal) &&
-                (sentimentVal === 'All' || d.sentiment === sentimentVal)
-            );
-            const totalPages = Math.ceil(filtered.length / itemsPerPage);
-            
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
             if(currentPage + d > 0 && currentPage + d <= totalPages) {
                 currentPage += d;
-                updateDashboard();
+                renderList(filteredData);
             }
         }
 
+        // ✅ 요청 2: 엑셀 다운로드 (올바른 순서 + 한글 깨짐 방지)
         function downloadCSV() {
-            const countryVal = document.getElementById('countryFilter').value;
-            const sentimentVal = document.getElementById('sentimentFilter').value;
-            const filtered = MOCK_DATA.filter(d => 
-                (countryVal === 'All' || d.country === countryVal) &&
-                (sentimentVal === 'All' || d.sentiment === sentimentVal)
-            );
-
-            let csv = "Source,Date,Country,Sentiment,Category,Content\n";
-            filtered.forEach(row => {
-                csv += `${row.source},${row.date},${row.country},${row.sentiment},${row.category},${row.content.replace(/,/g, ' ')}\n`;
-            });
+            let csvContent = "\uFEFFSource,Date,Country,Sentiment,Category,Original Content,Korean Translation,Link\n"; // BOM 추가
             
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `VOC_Data_${new Date().toISOString().slice(0,10)}.csv`;
-            a.click();
+            filteredData.forEach(row => {
+                // 쉼표가 있을 경우 따옴표로 감싸서 CSV 형식이 깨지지 않게 처리
+                const cleanContent = `"${row.content.replace(/"/g, '""')}"`;
+                const cleanTrans = `"${row.translation.replace(/"/g, '""')}"`;
+                
+                csvContent += `${row.source},${row.date},${row.country},${row.sentiment},${row.category},${cleanContent},${cleanTrans},${row.link}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `VOC_Data_${document.getElementById('startDate').value}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ✅ 요청 1: Confluence 붙여넣기용 테이블 복사
+        async function copyForConfluence() {
+            let tableHtml = `
+                <table border="1" style="border-collapse: collapse; width: 100%;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th>Source</th><th>Date</th><th>Country</th><th>Sentiment</th>
+                            <th>Category</th><th>Original Content</th><th>Korean Translation</th><th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            filteredData.slice(0, 50).forEach(row => { // 너무 많으면 느려지니 50개까지만 복사
+                const color = row.sentiment === 'Positive' ? 'green' : row.sentiment === 'Negative' ? 'red' : 'gray';
+                tableHtml += `
+                    <tr>
+                        <td>${row.source}</td>
+                        <td>${row.date}</td>
+                        <td>${row.country}</td>
+                        <td style="color:${color}; font-weight:bold;">${row.sentiment}</td>
+                        <td>${row.category}</td>
+                        <td>${row.content}</td>
+                        <td>${row.translation}</td>
+                        <td><a href="${row.link}">Link</a></td>
+                    </tr>
+                `;
+            });
+            tableHtml += `</tbody></table>`;
+
+            try {
+                const blob = new Blob([tableHtml], { type: 'text/html' });
+                const textBlob = new Blob(["HTML table copied"], { type: 'text/plain' });
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/html': blob,
+                        'text/plain': textBlob
+                    })
+                ]);
+                alert("Confluence용 표가 복사되었습니다! Ctrl+V로 붙여넣으세요.");
+            } catch (err) {
+                console.error('복사 실패:', err);
+                alert("복사에 실패했습니다. 브라우저 권한을 확인해주세요.");
+            }
         }
 
         // 초기 실행
-        updateDashboard();
+        runSearch();
     </script>
 </body>
 </html>
