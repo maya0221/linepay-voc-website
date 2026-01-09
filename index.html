@@ -6,7 +6,7 @@
     <title>LINE Pay VOC Insights (Taiwan)</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* 스타일은 기존과 동일 */
+        /* 기본 스타일 */
         :root { --primary: #00B900; --bg-gray: #F8FAFC; --border: #E2E8F0; --text-dark: #1E293B; --text-gray: #64748B; --pos: #00B900; --neu: #94A3B8; --neg: #EF4444; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-gray); color: var(--text-dark); padding-bottom: 40px; }
@@ -29,8 +29,10 @@
         .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 160px; }
         .search-btn { background: #0F172A; color: white; padding: 8px 30px; border-radius: 6px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; height: 38px; margin-top: 18px; }
         
-        .grid-dashboard { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1600px; margin: 0 auto; padding: 0 24px; }
-        @media (min-width: 1200px) { .grid-dashboard { grid-template-columns: 1fr 1fr 1fr; } }
+        /* ✅ 그리드 & 레이아웃: 가로폭 95%로 대폭 확장 */
+        .grid-dashboard { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 95%; margin: 0 auto; padding: 0 24px; }
+        @media (min-width: 1400px) { .grid-dashboard { grid-template-columns: 1fr 1fr 1fr; } }
+        
         .ai-box { border-left: 4px solid #8B5CF6; background: #F5F3FF; }
         .section-title { color: #1E293B; font-weight: 800; font-size: 12px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
         .chart-container { display: flex; align-items: flex-end; height: 140px; gap: 20px; margin-bottom: 24px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
@@ -43,12 +45,17 @@
         .cat-table td { padding: 10px 8px; border-bottom: 1px solid #F1F5F9; font-weight: 600; }
         .text-pos { color: var(--pos); } .text-neg { color: var(--neg); } .text-neu { color: var(--neu); }
         
-        .list-container { max-width: 1600px; margin: 24px auto; padding: 0 24px; }
-        .main-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .main-table th { text-align: left; padding: 12px 16px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-        .main-table td { padding: 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        /* ✅ 리스트 컨테이너도 95%로 확장 */
+        .list-container { max-width: 95%; margin: 24px auto; padding: 0 24px; }
+        .main-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; /* 고정 레이아웃 */ }
+        .main-table th { text-align: left; padding: 12px 16px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .main-table td { padding: 16px; border-bottom: 1px solid var(--border); vertical-align: top; word-wrap: break-word; } /* 내용은 줄바꿈 허용 */
         .main-table tr:hover { background: #FAFAFA; }
-        .tag-cat { background: #F1F5F9; color: #475569; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        
+        /* ✅ 줄바꿈 방지 유틸리티 클래스 */
+        .nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .tag-cat { background: #F1F5F9; color: #475569; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; }
         .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
         .page-btn { background: white; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
         .page-btn.active { background: #0F172A; color: white; border-color: #0F172A; }
@@ -141,7 +148,17 @@
         <div class="card" style="padding:0; overflow:hidden;">
             <div style="overflow-x:auto;">
                 <table class="main-table">
-                    <thead><tr><th style="width:100px;">SOURCE</th><th style="width:90px;">DATE</th><th style="width:100px;">SENTIMENT</th><th style="width:120px;">CATEGORY</th><th>ORIGINAL CONTENT</th><th>KOREAN TRANSLATION</th><th style="width:50px;">LINK</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width:120px;">SOURCE</th>
+                            <th style="width:110px;">DATE</th>
+                            <th style="width:100px;">SENTIMENT</th>
+                            <th style="width:160px;">CATEGORY</th>
+                            <th>ORIGINAL CONTENT</th>
+                            <th>KOREAN TRANSLATION</th>
+                            <th style="width:50px;">LINK</th>
+                        </tr>
+                    </thead>
                     <tbody id="listBody"></tbody>
                 </table>
             </div>
@@ -267,36 +284,25 @@
             document.getElementById('valPos').innerText = `${pPos}%`; document.getElementById('valNeu').innerText = `${pNeu}%`; document.getElementById('valNeg').innerText = `${pNeg}%`;
         }
 
-        // ✅ 테이블 업데이트 함수 수정 (TOTAL 계산 및 표시)
         function updateTables(data) {
             const sMap = {}; const uniqueSources = [...new Set(data.map(d => d.source))];
-            // 초기화에 total 추가
             uniqueSources.forEach(s => sMap[s] = { pos:0, neu:0, neg:0, total:0 });
             data.forEach(d => { 
                 const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu'; 
-                if(sMap[d.source]) {
-                    sMap[d.source][k]++;
-                    sMap[d.source].total++; // total 증가
-                }
+                if(sMap[d.source]) { sMap[d.source][k]++; sMap[d.source].total++; }
             });
             let sHtml = ''; uniqueSources.forEach(s => { const r = sMap[s]; 
-                // TOTAL 열 추가 (굵게 표시)
                 sHtml += `<tr><td>${s}</td><td style="font-weight:bold;">${r.total}</td><td class="text-pos">${r.pos}</td><td class="text-neu">${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`; 
             });
             document.getElementById('sourceTable').innerHTML = sHtml;
 
             const cMap = {}; const uniqueCats = [...new Set(data.map(d => d.category))];
-            // 초기화에 total 추가
             uniqueCats.forEach(c => cMap[c] = { pos:0, neu:0, neg:0, total:0 });
             data.forEach(d => { 
                 const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu'; 
-                if(cMap[d.category]) {
-                    cMap[d.category][k]++;
-                    cMap[d.category].total++; // total 증가
-                }
+                if(cMap[d.category]) { cMap[d.category][k]++; cMap[d.category].total++; }
             });
             let cHtml = ''; uniqueCats.forEach(c => { const r = cMap[c]; 
-                // TOTAL 열 추가 (굵게 표시)
                 cHtml += `<tr><td>${c}</td><td style="font-weight:bold;">${r.total}</td><td class="text-pos">${r.pos}</td><td class="text-neu">${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`; 
             });
             document.getElementById('catTable').innerHTML = cHtml;
@@ -309,7 +315,17 @@
             pageData.forEach(item => {
                 const sentColor = item.sentiment === 'Positive' ? '#00B900' : item.sentiment === 'Negative' ? '#EF4444' : '#94A3B8';
                 const linkHtml = item.link && item.link.startsWith('http') ? `<a href="${item.link}" target="_blank" style="text-decoration:none;">🔗</a>` : `<span style="color:#cbd5e1;">-</span>`;
-                html += `<tr><td style="font-weight:700;">${item.source}</td><td style="color:#64748B;">${item.date}</td><td style="color:${sentColor}; font-weight:700;">${item.sentiment}</td><td><span class="tag-cat">${item.category}</span></td><td><div style="font-weight:600; font-size:12px;">"${item.content}"</div></td><td><div style="font-size:12px; color:#64748B;">${item.translation}</div></td><td>${linkHtml}</td></tr>`;
+                // ✅ nowrap 클래스와 스타일 적용: 절대 줄바꿈 되지 않음
+                html += `
+                    <tr>
+                        <td class="nowrap" style="font-weight:700;">${item.source}</td>
+                        <td class="nowrap" style="color:#64748B;">${item.date}</td>
+                        <td class="nowrap" style="color:${sentColor}; font-weight:700;">${item.sentiment}</td>
+                        <td class="nowrap"><span class="tag-cat">${item.category}</span></td>
+                        <td><div style="font-weight:600; font-size:12px;">"${item.content}"</div></td>
+                        <td><div style="font-size:12px; color:#64748B;">${item.translation}</div></td>
+                        <td>${linkHtml}</td>
+                    </tr>`;
             });
             tbody.innerHTML = html;
             const totalPages = Math.ceil(data.length / itemsPerPage);
