@@ -29,7 +29,7 @@
         .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 160px; }
         .search-btn { background: #0F172A; color: white; padding: 8px 30px; border-radius: 6px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; height: 38px; margin-top: 18px; }
         
-        /* 그리드 & 레이아웃 */
+        /* 그리드 & 레이아웃: 가로폭 96% */
         .grid-dashboard { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 96%; margin: 0 auto; padding: 0 24px; }
         @media (min-width: 1400px) { .grid-dashboard { grid-template-columns: 1fr 1fr 1fr; } }
         
@@ -45,7 +45,7 @@
         .cat-table td { padding: 10px 8px; border-bottom: 1px solid #F1F5F9; font-weight: 600; }
         .text-pos { color: var(--pos); } .text-neg { color: var(--neg); } .text-neu { color: var(--neu); }
         
-        /* 리스트 테이블 */
+        /* 리스트 테이블: 가로 스크롤 제거 */
         .list-container { max-width: 96%; margin: 24px auto; padding: 0 24px; }
         .main-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
         .main-table th { text-align: left; padding: 12px 10px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -57,15 +57,13 @@
         .page-btn { background: white; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
         .page-btn.active { background: #0F172A; color: white; border-color: #0F172A; }
 
-        /* 모달 스타일 수정 */
+        /* 모달 스타일 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; width: 900px; max-height: 95vh; border-radius: 16px; padding: 0; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .modal-content { background: white; width: 900px; max-height: 90vh; border-radius: 16px; padding: 0; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        /* ✅ modal-body 배경색을 흰색으로 변경 */
-        .modal-body { padding: 30px; overflow-y: auto; background: white; }
+        .modal-body { padding: 24px; overflow-y: auto; background: #f3f4f6; }
         .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
-        /* ✅ report-preview 스타일 제거 (내부 콘텐츠가 자연스럽게 보이도록) */
-        .report-preview { }
+        .report-preview { background: white; padding: 40px; margin: 0 auto; max-width: 800px; border: 1px solid #e5e7eb; }
     </style>
 </head>
 <body>
@@ -315,7 +313,6 @@
             pageData.forEach(item => {
                 const sentColor = item.sentiment === 'Positive' ? '#00B900' : item.sentiment === 'Negative' ? '#EF4444' : '#94A3B8';
                 const linkHtml = item.link && item.link.startsWith('http') ? `<a href="${item.link}" target="_blank" style="text-decoration:none;">🔗</a>` : `<span style="color:#cbd5e1;">-</span>`;
-                
                 html += `
                     <tr>
                         <td style="font-weight:700;">${item.source}</td>
@@ -369,6 +366,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
+        // ✅ 리포트 생성 로직 업그레이드 (다양한 감정 균형 있게 추출)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -381,7 +379,8 @@
                 if(cMap[d.category]) { cMap[d.category][k]++; cMap[d.category].total++; }
             });
 
-            // ✅ 최상위 테이블에 align="left" 추가하여 이메일 좌측 정렬 강제
+            const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
+
             let reportHtml = `
                 <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0;">
                     <tr>
@@ -423,15 +422,27 @@
             });
             reportHtml += `</tbody></table></td></tr>`;
             
-            // ✅ Real VOC 섹션: 카테고리별 그룹화 디자인 복구 (image_3.png 스타일)
             reportHtml += `<tr><td><h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 25px; font-size: 16px;">3. Category Details & Real VOC (Top 3)</h3>`;
             
-            const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
-
             uniqueCats.forEach(cat => {
                 const catData = filteredData.filter(d => d.category === cat);
-                // 각 카테고리 내에서 감정순 정렬 후 상위 3개 추출
-                const top3VOC = [...catData].sort((a, b) => sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment]).slice(0, 3);
+                
+                // 🔥 [핵심 변경] 감정별로 골고루 뽑기 (Pos, Neu, Neg 하나씩 우선 확보)
+                let pickedVOCs = [];
+                ['Positive', 'Neutral', 'Negative'].forEach(sent => {
+                    const item = catData.find(d => d.sentiment === sent);
+                    if (item) pickedVOCs.push(item);
+                });
+
+                // 3개가 안 채워졌으면 나머지 중에서 채우기 (중복 방지)
+                if (pickedVOCs.length < 3) {
+                    const remaining = catData.filter(d => !pickedVOCs.includes(d));
+                    pickedVOCs = [...pickedVOCs, ...remaining.slice(0, 3 - pickedVOCs.length)];
+                }
+
+                // 최종 보여줄 때는 다시 감정 순서(Pos > Neu > Neg)로 정렬
+                pickedVOCs.sort((a, b) => sentimentOrder[a.sentiment] - sentimentOrder[b.sentiment]);
+
                 const totalCount = catData.length;
 
                 reportHtml += `
@@ -452,10 +463,10 @@
                             <td width="65%" valign="top" style="padding-left: 25px;">
                 `;
                 
-                if (top3VOC.length === 0) {
+                if (pickedVOCs.length === 0) {
                      reportHtml += `<div style="font-size: 12px; color: #999;">No VOCs found for this category in the selected period.</div>`;
                 } else {
-                    top3VOC.forEach(v => {
+                    pickedVOCs.forEach(v => {
                         const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
                         const bgStyle = v.sentiment === 'Positive' ? 'background-color: #F0FDF4; border-color: #DCFCE7;' : (v.sentiment === 'Negative' ? 'background-color: #FEF2F2; border-color: #FEE2E2;' : 'background-color: #F8FAFC; border-color: #E2E8F0;');
 
