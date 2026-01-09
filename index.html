@@ -57,13 +57,45 @@
         .page-btn { background: white; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
         .page-btn.active { background: #0F172A; color: white; border-color: #0F172A; }
 
-        /* 모달 스타일 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; width: 900px; max-height: 90vh; border-radius: 16px; padding: 0; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding: 24px; overflow-y: auto; background: #f3f4f6; }
-        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
-        .report-preview { background: white; padding: 40px; margin: 0 auto; max-width: 800px; border: 1px solid #e5e7eb; }
+        /* ⭐️ 모달 및 리포트 A4 스타일 수정 영역 ⭐️ */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); /* 배경을 좀 더 어둡게 */
+            display: none; justify-content: center; align-items: center; z-index: 1000; 
+            backdrop-filter: blur(2px);
+        }
+        /* modal-content는 이제 '종이'가 아니라 UI 컨테이너 역할만 합니다 */
+        .modal-content { 
+            background: transparent; /* 배경 투명 */
+            width: 900px; max-height: 95vh; 
+            border-radius: 12px; /* 전체 컨테이너 라운드 */
+            padding: 0; display: flex; flex-direction: column; 
+            box-shadow: none; /* 자체 그림자 제거 */
+            overflow: hidden; /* 내부 라운드 처리 */
+        }
+        .modal-header { 
+            background: white; padding: 16px 24px; /* 헤더는 흰색 UI */
+            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
+        }
+        /* modal-body는 종이가 놓인 '책상' 배경색 */
+        .modal-body { 
+            padding: 30px 0; /* 상하 패딩을 주어 종이가 떠보이게 */
+            overflow-y: auto; 
+            background: #E2E8F0; /* 진한 회색 배경으로 변경하여 종이 강조 */
+        }
+        .modal-footer { 
+            background: white; padding: 16px 24px; /* 푸터도 흰색 UI */
+            border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; 
+        }
+        /* ⭐️ 여기가 핵심! A4 용지 스타일 구현 ⭐️ */
+        .report-preview { 
+            background: #ffffff; /* 완전 흰색 종이 */
+            padding: 40px 50px; /* A4 느낌의 넓은 여백 */
+            margin: 0 auto; /* 중앙 정렬 */
+            max-width: 750px; /* A4 비율에 가까운 폭 */
+            /* 기존 테두리(border: 1px solid #e5e7eb) 제거하고 리얼한 그림자 적용 */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 12px 30px rgba(0,0,0,0.1); /* 종이가 떠있는 듯한 입체적인 그림자 */
+        }
     </style>
 </head>
 <body>
@@ -366,7 +398,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ [V8.0 최종 순정 버전] 리포트 생성 - 흰 배경 & 얇은 테두리
+        // ✅ 리포트 생성 (배경색 흰색 + 왼쪽 컬러 테두리 + 이메일 좌측 정렬)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -462,9 +494,9 @@
                     pickedVOCs.forEach(v => {
                         const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
                         
-                        // 🛑 굵은 컬러바 제거, 배경은 무조건 흰색, 테두리는 회색 (이미지_9 완벽 구현)
-                        // border-left 삭제함
-                        const boxStyle = `background-color: #ffffff !important; border: 1px solid #E2E8F0; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
+                        // ✅ [핵심 수정] 배경색 흰색, 회색 테두리, 왼쪽만 컬러 테두리 적용
+                        const borderLeftColor = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#94A3B8');
+                        const boxStyle = `background-color: #ffffff !important; border: 1px solid #E2E8F0; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
 
                         reportHtml += `
                             <div style="${boxStyle}">
