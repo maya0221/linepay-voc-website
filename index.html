@@ -201,7 +201,7 @@
     </div>
 
     <script>
-        // --- 1. 기본 Mock Data ---
+        // --- 1. 기본 Mock Data (데이터 대폭 증량 및 기간 최신화) ---
         const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
         const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
         
@@ -209,13 +209,20 @@
             return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString().split('T')[0];
         }
 
-        let DATA_STORE = Array.from({ length: 50 }).map((_, i) => {
+        const today = new Date();
+        // ✅ [수정] 데이터 생성 기간을 최근 3개월로 집중시킴 (화면에 잘 나오게 하기 위해)
+        const threeMonthsAgo = new Date(new Date().setMonth(today.getMonth() - 3));
+
+        // ✅ [수정] 데이터 개수를 150개로 늘려서 페이징이 넉넉하게 나오도록 함
+        let DATA_STORE = Array.from({ length: 150 }).map((_, i) => {
             const countries = ['TW', 'TW', 'TW', 'Global']; 
             const sentiments = ['Positive', 'Neutral', 'Negative'];
             const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
             const country = countries[i % 4];
             const category = CATEGORIES[i % 5];
-            const date = randomDate(new Date(2024, 0, 1), new Date(2025, 11, 31));
+            
+            // 최근 3개월 내의 날짜만 생성
+            const date = randomDate(threeMonthsAgo, today);
             
             return {
                 id: i,
@@ -230,11 +237,8 @@
             };
         });
 
-        // ✅ [핵심 변경] 날짜 기본값을 "오늘" 기준 1개월 전으로 자동 설정
-        const today = new Date();
+        // ✅ [수정] 기본 조회 기간을 "최근 1개월"로 설정
         const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
-        
-        // YYYY-MM-DD 형식으로 변환
         const formatDate = (date) => date.toISOString().split('T')[0];
         
         document.getElementById('startDate').value = formatDate(oneMonthAgo);
