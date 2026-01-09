@@ -108,3 +108,333 @@
             <div class="filter-group">
                 <label>TARGET COUNTRY</label>
                 <select id="countryFilter" class="filter-select">
+                    <option value="All">All Countries</option>
+                    <option value="TW" selected>Taiwan</option>
+                    <option value="Global">Global (Others)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>SENTIMENT FILTER</label>
+                <select id="sentimentFilter" class="filter-select">
+                    <option value="All">All Sentiments</option>
+                    <option value="Positive">Positive</option>
+                    <option value="Neutral">Neutral</option>
+                    <option value="Negative">Negative</option>
+                </select>
+            </div>
+        </div>
+        <button class="search-btn" onclick="runSearch()">🔍 Search</button>
+    </div>
+
+    <div class="grid-dashboard">
+        
+        <div class="card p-6 ai-box">
+            <div class="section-title" style="color:#7C3AED;">🔮 AI STRATEGIC INSIGHTS</div>
+            <div class="mb-4">
+                <span style="background:rgba(139, 92, 246, 0.1); color:#7C3AED; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">ENGLISH</span>
+                <p id="aiEn" style="font-size:13px; font-weight:600; font-style:italic; margin-top:6px; line-height:1.5; color:#334155;">Analyzing...</p>
+            </div>
+            <div style="border-top:1px solid rgba(139, 92, 246, 0.2); padding-top:12px;">
+                <span style="background:rgba(139, 92, 246, 0.1); color:#7C3AED; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">KOREAN SUMMARY</span>
+                <p id="aiKo" style="font-size:12px; font-weight:500; margin-top:6px; line-height:1.5; color:#475569;">분석 중...</p>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="section-title">📊 SENTIMENT METRICS</div>
+            
+            <div class="chart-container">
+                <div class="chart-col">
+                    <span class="chart-val text-pos" id="valPos">0%</span>
+                    <div id="barPos" class="chart-bar" style="background-color: #00B900; height: 10%;"></div>
+                    <span class="chart-label">POS</span>
+                </div>
+                <div class="chart-col">
+                    <span class="chart-val text-neu" id="valNeu">0%</span>
+                    <div id="barNeu" class="chart-bar" style="background-color: #94A3B8; height: 10%;"></div>
+                    <span class="chart-label">NEU</span>
+                </div>
+                <div class="chart-col">
+                    <span class="chart-val text-neg" id="valNeg">0%</span>
+                    <div id="barNeg" class="chart-bar" style="background-color: #EF4444; height: 10%;"></div>
+                    <span class="chart-label">NEG</span>
+                </div>
+            </div>
+
+            <table class="cat-table">
+                <thead><tr><th>SOURCE</th><th class="text-pos">POS</th><th class="text-neu">NEU</th><th class="text-neg">NEG</th></tr></thead>
+                <tbody id="sourceTable"></tbody>
+            </table>
+        </div>
+
+        <div class="card p-6">
+            <div class="section-title">🔢 CATEGORY STATUS</div>
+            <table class="cat-table">
+                <thead><tr><th>CATEGORY</th><th class="text-pos">POS</th><th class="text-neu">NEU</th><th class="text-neg">NEG</th></tr></thead>
+                <tbody id="catTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="list-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-weight:800; font-size:12px; color:#0F172A;">💬 VERIFIED USER VOICES <span id="totalCount">(0)</span></span>
+            <span id="filterLabel" style="font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase;">APPLIED FILTERS: -</span>
+        </div>
+
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div style="overflow-x:auto;">
+                <table class="main-table">
+                    <thead>
+                        <tr>
+                            <th style="width:100px;">SOURCE</th>
+                            <th style="width:90px;">DATE</th>
+                            <th style="width:80px;">COUNTRY</th>
+                            <th style="width:100px;">SENTIMENT</th>
+                            <th style="width:120px;">CATEGORY</th>
+                            <th>ORIGINAL CONTENT</th>
+                            <th>KOREAN TRANSLATION</th>
+                            <th style="width:50px;">LINK</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listBody"></tbody>
+                </table>
+            </div>
+            <div class="pagination" style="padding:16px; border-top:1px solid var(--border); margin-top:0;">
+                <button class="page-btn" onclick="changePage(-1)">Prev</button>
+                <div id="pageNumbers" class="flex gap-1"></div>
+                <button class="page-btn" onclick="changePage(1)">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 데이터 생성 설정
+        const CATEGORIES = ['Payment UX', 'Merchant Network', 'Promotion', 'Account Setup', 'CS Response'];
+        const SOURCES = ['Facebook', 'App Store', 'Play Store', 'Threads'];
+        
+        function randomDate(start, end) {
+            return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString().split('T')[0];
+        }
+
+        const MOCK_DATA = Array.from({ length: 200 }).map((_, i) => {
+            const countries = ['TW', 'TW', 'TW', 'Global']; 
+            const sentiments = ['Positive', 'Neutral', 'Negative'];
+            const sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
+            const country = countries[i % 4];
+            const category = CATEGORIES[i % 5];
+            const date = randomDate(new Date(2024, 0, 1), new Date(2025, 11, 31));
+            
+            return {
+                id: i,
+                source: SOURCES[i % 4],
+                date: date,
+                country: country,
+                sentiment: sentiment,
+                category: category,
+                content: `[${category}] Feedback from ${country}. The service experience was ${sentiment.toLowerCase()}.`,
+                translation: `[${category}] ${country} 피드백. 서비스 경험이 ${sentiment === 'Positive' ? '좋았습니다' : '보통/나빴습니다'}.`,
+                link: `https://voc.linepay.com/id/${i}`
+            };
+        });
+
+        // 초기 날짜 및 필터 값 설정
+        document.getElementById('startDate').value = '2024-01-01';
+        document.getElementById('endDate').value = '2025-12-31';
+        document.getElementById('countryFilter').value = 'TW';
+
+        let currentPage = 1;
+        const itemsPerPage = 8;
+        let filteredData = [];
+
+        function runSearch() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const countryVal = document.getElementById('countryFilter').value;
+            const sentimentVal = document.getElementById('sentimentFilter').value;
+
+            filteredData = MOCK_DATA.filter(d => {
+                const dateMatch = d.date >= startDate && d.date <= endDate;
+                const countryMatch = countryVal === 'All' || d.country === countryVal;
+                const sentimentMatch = sentimentVal === 'All' || d.sentiment === sentimentVal;
+                return dateMatch && countryMatch && sentimentMatch;
+            });
+
+            filteredData.sort((a, b) => b.date.localeCompare(a.date));
+
+            currentPage = 1;
+            updateUI(filteredData);
+            
+            document.getElementById('filterLabel').innerText = `FILTERS: ${startDate}~${endDate} • ${countryVal} • ${sentimentVal}`;
+        }
+
+        function updateUI(data) {
+            document.getElementById('totalCount').innerText = `(${data.length})`;
+            
+            const pos = data.filter(d => d.sentiment === 'Positive').length;
+            const neg = data.filter(d => d.sentiment === 'Negative').length;
+            const topSent = pos >= neg ? 'Positive' : 'Negative';
+            document.getElementById('aiEn').innerText = `"Analysis of ${data.length} records shows predominant ${topSent} sentiment."`;
+            document.getElementById('aiKo').innerText = `"${data.length}건 분석 결과, ${topSent === 'Positive' ? '긍정적' : '부정적'} 반응이 우세합니다."`;
+
+            updateCharts(data);
+            updateTables(data);
+            renderList(data);
+        }
+
+        function updateCharts(data) {
+            const total = data.length || 1;
+            const pos = data.filter(d => d.sentiment === 'Positive').length;
+            const neu = data.filter(d => d.sentiment === 'Neutral').length;
+            const neg = data.filter(d => d.sentiment === 'Negative').length;
+
+            const pPos = Math.round((pos/total)*100);
+            const pNeu = Math.round((neu/total)*100);
+            const pNeg = Math.round((neg/total)*100);
+
+            document.getElementById('barPos').style.height = `${Math.max(pPos, 2)}%`;
+            document.getElementById('barNeu').style.height = `${Math.max(pNeu, 2)}%`;
+            document.getElementById('barNeg').style.height = `${Math.max(pNeg, 2)}%`;
+            
+            document.getElementById('valPos').innerText = `${pPos}%`;
+            document.getElementById('valNeu').innerText = `${pNeu}%`;
+            document.getElementById('valNeg').innerText = `${pNeg}%`;
+        }
+
+        function updateTables(data) {
+            const sMap = {};
+            SOURCES.forEach(s => sMap[s] = { pos:0, neu:0, neg:0 });
+            data.forEach(d => {
+                const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu';
+                if(sMap[d.source]) sMap[d.source][k]++;
+            });
+            let sHtml = '';
+            SOURCES.forEach(s => {
+                const r = sMap[s];
+                sHtml += `<tr><td>${s}</td><td class="text-pos">${r.pos}</td><td class="text-neu">${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`;
+            });
+            document.getElementById('sourceTable').innerHTML = sHtml;
+
+            const cMap = {};
+            CATEGORIES.forEach(c => cMap[c] = { pos:0, neu:0, neg:0 });
+            data.forEach(d => {
+                const k = d.sentiment === 'Positive' ? 'pos' : d.sentiment === 'Negative' ? 'neg' : 'neu';
+                if(cMap[d.category]) cMap[d.category][k]++;
+            });
+            let cHtml = '';
+            CATEGORIES.forEach(c => {
+                const r = cMap[c];
+                cHtml += `<tr><td>${c}</td><td class="text-pos">${r.pos}</td><td class="text-neu">${r.neu}</td><td class="text-neg">${r.neg}</td></tr>`;
+            });
+            document.getElementById('catTable').innerHTML = cHtml;
+        }
+
+        function renderList(data) {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = data.slice(start, end);
+            const tbody = document.getElementById('listBody');
+            
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#94a3b8;">No data found within this period.</td></tr>';
+                document.getElementById('pageNumbers').innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            pageData.forEach(item => {
+                const sentColor = item.sentiment === 'Positive' ? '#00B900' : item.sentiment === 'Negative' ? '#EF4444' : '#94A3B8';
+                
+                html += `
+                    <tr>
+                        <td style="font-weight:700;">${item.source}</td>
+                        <td style="color:#64748B;">${item.date}</td>
+                        <td><span class="badge badge-country">${item.country}</span></td>
+                        <td style="color:${sentColor}; font-weight:700;">${item.sentiment}</td>
+                        <td><span class="tag-cat">${item.category}</span></td>
+                        <td><div style="font-weight:600; font-size:12px;">"${item.content}"</div></td>
+                        <td><div style="font-size:12px; color:#64748B;">${item.translation}</div></td>
+                        <td><a href="${item.link}" target="_blank" style="text-decoration:none;">🔗</a></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+            
+            const totalPages = Math.ceil(data.length / itemsPerPage);
+            let pHtml = '';
+            for(let i=1; i<=Math.min(5, totalPages); i++) {
+                pHtml += `<button class="page-btn ${i===currentPage?'active':''}" onclick="setPage(${i})">${i}</button>`;
+            }
+            document.getElementById('pageNumbers').innerHTML = pHtml;
+        }
+
+        function downloadCSV() {
+            let csvContent = "\uFEFFSource,Date,Country,Sentiment,Category,Original Content,Korean Translation,Link\n";
+            
+            filteredData.forEach(row => {
+                const cleanContent = `"${row.content.replace(/"/g, '""')}"`;
+                const cleanTrans = `"${row.translation.replace(/"/g, '""')}"`;
+                
+                csvContent += `${row.source},${row.date},${row.country},${row.sentiment},${row.category},${cleanContent},${cleanTrans},${row.link}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `VOC_Data_${document.getElementById('startDate').value}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function copyForConfluence() {
+            let tableHtml = `
+                <table border="1" style="border-collapse: collapse; width: 100%;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th>Source</th><th>Date</th><th>Country</th><th>Sentiment</th>
+                            <th>Category</th><th>Original Content</th><th>Korean Translation</th><th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            filteredData.slice(0, 50).forEach(row => {
+                const color = row.sentiment === 'Positive' ? 'green' : row.sentiment === 'Negative' ? 'red' : 'gray';
+                tableHtml += `
+                    <tr>
+                        <td>${row.source}</td>
+                        <td>${row.date}</td>
+                        <td>${row.country}</td>
+                        <td style="color:${color}; font-weight:bold;">${row.sentiment}</td>
+                        <td>${row.category}</td>
+                        <td>${row.content}</td>
+                        <td>${row.translation}</td>
+                        <td><a href="${row.link}">Link</a></td>
+                    </tr>
+                `;
+            });
+            tableHtml += `</tbody></table>`;
+
+            try {
+                const blob = new Blob([tableHtml], { type: 'text/html' });
+                const textBlob = new Blob(["HTML table copied"], { type: 'text/plain' });
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/html': blob,
+                        'text/plain': textBlob
+                    })
+                ]);
+                // ✅ 알림 메시지 영어 변경
+                alert("Table copied for Confluence! Press Ctrl+V to paste.");
+            } catch (err) {
+                console.error('복사 실패:', err);
+                alert("Failed to copy. Please check browser permissions.");
+            }
+        }
+
+        runSearch();
+    </script>
+</body>
+</html>
