@@ -45,7 +45,7 @@
         .cat-table td { padding: 10px 8px; border-bottom: 1px solid #F1F5F9; font-weight: 600; }
         .text-pos { color: var(--pos); } .text-neg { color: var(--neg); } .text-neu { color: var(--neu); }
         
-        /* 리스트 테이블: 가로 스크롤 제거 */
+        /* 리스트 테이블 */
         .list-container { max-width: 96%; margin: 24px auto; padding: 0 24px; }
         .main-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
         .main-table th { text-align: left; padding: 12px 10px; background: #F8FAFC; color: var(--text-gray); font-size: 11px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -57,44 +57,30 @@
         .page-btn { background: white; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
         .page-btn.active { background: #0F172A; color: white; border-color: #0F172A; }
 
-        /* ⭐️ 모달 및 리포트 A4 스타일 수정 영역 ⭐️ */
+        /* 모달 스타일 */
         .modal-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.6); /* 배경을 좀 더 어둡게 */
-            display: none; justify-content: center; align-items: center; z-index: 1000; 
-            backdrop-filter: blur(2px);
+            background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; 
+            backdrop-filter: blur(4px);
         }
-        /* modal-content는 이제 '종이'가 아니라 UI 컨테이너 역할만 합니다 */
         .modal-content { 
-            background: transparent; /* 배경 투명 */
-            width: 900px; max-height: 95vh; 
-            border-radius: 12px; /* 전체 컨테이너 라운드 */
-            padding: 0; display: flex; flex-direction: column; 
-            box-shadow: none; /* 자체 그림자 제거 */
-            overflow: hidden; /* 내부 라운드 처리 */
+            background: transparent; width: 900px; max-height: 95vh; 
+            border-radius: 16px; padding: 0; display: flex; flex-direction: column; box-shadow: none;
         }
         .modal-header { 
-            background: white; padding: 16px 24px; /* 헤더는 흰색 UI */
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
+            background: white; padding: 16px 24px; border-bottom: 1px solid var(--border); border-radius: 16px 16px 0 0;
+            display: flex; justify-content: space-between; align-items: center; 
         }
-        /* modal-body는 종이가 놓인 '책상' 배경색 */
         .modal-body { 
-            padding: 30px 0; /* 상하 패딩을 주어 종이가 떠보이게 */
-            overflow-y: auto; 
-            background: #E2E8F0; /* 진한 회색 배경으로 변경하여 종이 강조 */
+            padding: 40px 0; overflow-y: auto; background: #CBD5E1; 
         }
         .modal-footer { 
-            background: white; padding: 16px 24px; /* 푸터도 흰색 UI */
-            border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; 
+            background: white; padding: 16px 24px; border-top: 1px solid var(--border); border-radius: 0 0 16px 16px;
+            display: flex; justify-content: flex-end; gap: 12px; 
         }
-        /* ⭐️ 여기가 핵심! A4 용지 스타일 구현 ⭐️ */
         .report-preview { 
-            background: #ffffff; /* 완전 흰색 종이 */
-            padding: 40px 50px; /* A4 느낌의 넓은 여백 */
-            margin: 0 auto; /* 중앙 정렬 */
-            max-width: 750px; /* A4 비율에 가까운 폭 */
-            /* 기존 테두리(border: 1px solid #e5e7eb) 제거하고 리얼한 그림자 적용 */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 12px 30px rgba(0,0,0,0.1); /* 종이가 떠있는 듯한 입체적인 그림자 */
+            /* 화면상에서는 중앙에 예쁘게 보이도록 */
+            margin: 0 auto; width: 100%; display: flex; justify-content: center;
         }
     </style>
 </head>
@@ -398,7 +384,7 @@
             } catch (err) { alert("Failed to copy. Please check browser permissions."); }
         }
 
-        // ✅ 리포트 생성 (배경색 흰색 + 왼쪽 컬러 테두리 + 이메일 좌측 정렬)
+        // ✅ 리포트 생성 (진짜 최종: 왼쪽 정렬 강제 + 번호 제거)
         function openReportModal() {
             const modal = document.getElementById('reportModal');
             const template = document.getElementById('emailTemplate');
@@ -413,48 +399,58 @@
 
             const sentimentOrder = { 'Positive': 0, 'Neutral': 1, 'Negative': 2 };
 
+            // ⭐️ 핵심: 최상위 테이블 align="left" (이메일 왼쪽 정렬) + A4 테이블 align="left"
             let reportHtml = `
-                <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0;">
+                <table width="100%" align="left" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; color: #333; margin: 0;">
                     <tr>
-                        <td style="padding-bottom: 30px;">
-                            <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">1. Overall Summary</h3>
-                            <table width="100%" cellpadding="15" cellspacing="0" border="0">
+                        <td align="left">
+                            <table width="800" align="left" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; width: 100%; max-width: 800px; margin: 0; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: left;">
                                 <tr>
-                                    <td width="49%" valign="top" style="background-color: #F3F4F6; border-radius: 8px; border: 1px solid #E5E7EB;">
-                                        <strong style="color: #7C3AED; display: block; margin-bottom: 8px; font-size: 12px;">ENGLISH</strong>
-                                        <div style="font-size: 13px; line-height: 1.5; color: #374151;">${document.getElementById('aiEn').innerText.replace(/"/g, '')}</div>
-                                    </td>
-                                    <td width="2%"></td>
-                                    <td width="49%" valign="top" style="background-color: #F3F4F6; border-radius: 8px; border: 1px solid #E5E7EB;">
-                                        <strong style="color: #7C3AED; display: block; margin-bottom: 8px; font-size: 12px;">KOREAN</strong>
-                                        <div style="font-size: 13px; line-height: 1.5; color: #374151;">${document.getElementById('aiKo').innerText.replace(/"/g, '')}</div>
-                                    </td>
-                                </tr>
-                            </table>
+                                    <td style="padding: 50px;">
+            `;
+
+            // 1. Overall Summary (번호 제거)
+            reportHtml += `
+                <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Overall Summary</h3>
+                <table width="100%" cellpadding="15" cellspacing="0" border="0">
+                    <tr>
+                        <td width="49%" valign="top" style="background-color: #F3F4F6; border-radius: 8px; border: 1px solid #E5E7EB;">
+                            <strong style="color: #7C3AED; display: block; margin-bottom: 8px; font-size: 12px;">ENGLISH</strong>
+                            <div style="font-size: 13px; line-height: 1.5; color: #374151;">${document.getElementById('aiEn').innerText.replace(/"/g, '')}</div>
+                        </td>
+                        <td width="2%"></td>
+                        <td width="49%" valign="top" style="background-color: #F3F4F6; border-radius: 8px; border: 1px solid #E5E7EB;">
+                            <strong style="color: #7C3AED; display: block; margin-bottom: 8px; font-size: 12px;">KOREAN</strong>
+                            <div style="font-size: 13px; line-height: 1.5; color: #374151;">${document.getElementById('aiKo').innerText.replace(/"/g, '')}</div>
                         </td>
                     </tr>
-                    <tr>
-                        <td style="padding-bottom: 40px;">
-                            <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">2. Category & Key Issues</h3>
-                            <table width="100%" cellpadding="10" cellspacing="0" border="1" style="border-collapse: collapse; border-color: #E5E7EB; font-size: 12px;">
-                                <thead style="background-color: #F9FAFB;">
-                                    <tr>
-                                        <th align="left" style="padding: 10px;">Category</th>
-                                        <th align="center" style="padding: 10px; font-weight:bold;">Total</th>
-                                        <th align="center" style="color: #00B900; padding: 10px;">Positive</th>
-                                        <th align="center" style="color: #6B7280; padding: 10px;">Neutral</th>
-                                        <th align="center" style="color: #EF4444; padding: 10px;">Negative</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                </table>
+                <div style="height: 30px;"></div>
+            `;
+
+            // 2. Category & Key Issues (번호 제거)
+            reportHtml += `
+                <h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px;">Category & Key Issues</h3>
+                <table width="100%" cellpadding="10" cellspacing="0" border="1" style="border-collapse: collapse; border-color: #E5E7EB; font-size: 12px;">
+                    <thead style="background-color: #F9FAFB;">
+                        <tr>
+                            <th align="left" style="padding: 10px;">Category</th>
+                            <th align="center" style="padding: 10px; font-weight:bold;">Total</th>
+                            <th align="center" style="color: #00B900; padding: 10px;">Positive</th>
+                            <th align="center" style="color: #6B7280; padding: 10px;">Neutral</th>
+                            <th align="center" style="color: #EF4444; padding: 10px;">Negative</th>
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
             uniqueCats.forEach(c => {
                 const r = cMap[c];
                 reportHtml += `<tr><td style="padding: 10px;"><b>${c}</b></td><td align="center" style="padding: 10px; font-weight:bold;">${r.total}</td><td align="center" style="padding: 10px; color: #00B900;">${r.pos}</td><td align="center" style="padding: 10px; color: #6B7280;">${r.neu}</td><td align="center" style="padding: 10px; color: #EF4444;">${r.neg}</td></tr>`;
             });
-            reportHtml += `</tbody></table></td></tr>`;
-            
-            reportHtml += `<tr><td><h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 25px; font-size: 16px;">3. Category Details & Real VOC (Top 3)</h3>`;
+            reportHtml += `</tbody></table><div style="height: 30px;"></div>`;
+
+            // 3. Real VOC (번호 제거)
+            reportHtml += `<h3 style="border-bottom: 2px solid #00B900; padding-bottom: 10px; margin-bottom: 25px; font-size: 16px;">Category Details & Real VOC (Top 3)</h3>`;
             
             uniqueCats.forEach(cat => {
                 const catData = filteredData.filter(d => d.category === cat);
@@ -489,14 +485,12 @@
                 `;
                 
                 if (pickedVOCs.length === 0) {
-                     reportHtml += `<div style="font-size: 12px; color: #999;">No VOCs found for this category in the selected period.</div>`;
+                     reportHtml += `<div style="font-size: 12px; color: #999;">No VOCs found.</div>`;
                 } else {
                     pickedVOCs.forEach(v => {
                         const color = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#6B7280');
-                        
-                        // ✅ [핵심 수정] 배경색 흰색, 회색 테두리, 왼쪽만 컬러 테두리 적용
                         const borderLeftColor = v.sentiment === 'Positive' ? '#00B900' : (v.sentiment === 'Negative' ? '#EF4444' : '#94A3B8');
-                        const boxStyle = `background-color: #ffffff !important; border: 1px solid #E2E8F0; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
+                        const boxStyle = `background-color: #ffffff !important; border: 1px solid #E5E7EB; border-left: 5px solid ${borderLeftColor}; border-radius: 4px; padding: 12px; margin-bottom: 10px;`;
 
                         reportHtml += `
                             <div style="${boxStyle}">
@@ -512,7 +506,14 @@
                 reportHtml += `</td></tr></table>`;
             });
             
-            reportHtml += `</td></tr></table>`;
+            reportHtml += `
+                                    </td>
+                                </tr>
+                            </table>
+                            </td>
+                    </tr>
+                </table>
+            `;
             template.innerHTML = reportHtml;
             modal.style.display = 'flex';
         }
